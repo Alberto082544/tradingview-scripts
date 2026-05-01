@@ -1,0 +1,68 @@
+//@version=6
+strategy("EMA + MACD v5 [Solo Long - Indices 4H]",
+     overlay=true,
+     initial_capital=10000,
+     currency=currency.USD,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=10,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     slippage=2,
+     process_orders_on_close=false)
+
+// --- 1. MEDIAS MOVILES 4H ---
+emaRapidaLen = input.int(9,   title="EMA Rapida",    group="EMAs")
+emaLentaLen  = input.int(21,  title="EMA Lenta",     group="EMAs")
+emaTendLen   = input.int(200, title="EMA Tendencia", group="EMAs")
+
+emaRapida = ta.ema(close, emaRapidaLen)
+emaLenta  = ta.ema(close, emaLentaLen)
+emaTend   = ta.ema(close, emaTendLen)
+
+// --- 2. MACD ---
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+// --- 3. ADX ---
+adxLen    = input.int(14, title="ADX Periodo",       group="Filtros")
+adxUmbral = input.int(20, title="ADX Umbral minimo", group="Filtros")
+[_, _, adx] = ta.dmi(adxLen, adxLen)
+tendenciaFuerte = adx > adxUmbral
+
+// --- 4. EMA 50 DIARIA - confirmacion tendencia macro ---
+ema50d = ta.ema(request.security(syminfo.tickerid, "D", close), 50)
+tendenciaMacro = close > ema50d
+
+// --- 5. ATR barra anterior ---
+atrLen  = input.int(14,    title="ATR Periodo",          group="Riesgo")
+atrMult = input.float(2.0, title="ATR Multiplicador SL", group="Riesgo", step=0.1)
+atr = ta.atr(atrLen)[1]
+
+// --- 6. SEÑAL (solo Long) ---
+// Eliminado: RSI, filtro sesion, señales Short
+// Añadido: EMA 50 diaria como filtro macro
+tendAlcista = close > emaTend
+
+compra = ta.crossover(emaRapida, emaLenta)
+       and macdLine > signalLine
+       and tendAlcista
+       and tendenciaMacro
+       and tendenciaFuerte
+
+// --- 7. EJECUCION: SL 2xATR, TP 4xATR (RR 1:2) ---
+slTicks = math.round(atr * atrMult / syminfo.mintick)
+tpTicks = math.round(atr * atrMult * 2.0 / syminfo.mintick)
+
+if compra and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("SL/TP", "Long", loss=slTicks, profit=tpTicks)
+
+// --- 8. DIBUJAR ---
+plot(emaRapida, color=color.new(color.blue, 0),    linewidth=1, title="EMA 9")
+plot(emaLenta,  color=color.new(color.orange, 0),  linewidth=1, title="EMA 21")
+plot(emaTend,   color=color.new(color.gray, 20),   linewidth=2, title="EMA 200")
+plot(ema50d,    color=color.new(color.purple, 30), linewidth=1, title="EMA 50D", style=plot.style_circles)
+
+plotshape(compra, title="COMPRA", location=location.belowbar, color=color.green, style=shape.labelup, size=size.small, text="BUY", textcolor=color.white)
+
+if compra
+    alert("COMPRA | EMA+MACD+ADX+EMA50D confirmados", alert.freq_once_per_bar_close)
