@@ -1,0 +1,86 @@
+//@version=6
+strategy("Señales Intradía EMA + MACD v3 [Strategy]",
+     overlay=true,
+     initial_capital=10000,
+     currency=currency.USD,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=10,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     slippage=2,
+     process_orders_on_close=false)
+
+// --- 1. MEDIAS MÓVILES ---
+emaRapidaLen = input.int(9,   title="EMA Rápida",    group="EMAs")
+emaLentaLen  = input.int(21,  title="EMA Lenta",     group="EMAs")
+emaTendLen   = input.int(200, title="EMA Tendencia", group="EMAs")
+
+emaRapida = ta.ema(close, emaRapidaLen)
+emaLenta  = ta.ema(close, emaLentaLen)
+emaTend   = ta.ema(close, emaTendLen)
+
+// --- 2. MACD ---
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+// --- 3. RSI ---
+rsi = ta.rsi(close, 14)
+
+// --- 4. ADX — solo operar con tendencia real (evita mercados laterales) ---
+adxLen    = input.int(14, title="ADX Período", group="Filtros")
+adxUmbral = input.int(20, title="ADX Umbral mínimo", group="Filtros")
+[diPlus, diMinus, adx] = ta.dmi(adxLen, adxLen)
+tendenciaFuerte = adx > adxUmbral
+
+// --- 5. ATR — calculado sobre barra anterior para evitar lookahead ---
+atrLen  = input.int(14,   title="ATR Período",            group="Riesgo")
+atrMult = input.float(2.0, title="ATR Multiplicador SL",  group="Riesgo", step=0.1)
+atr = ta.atr(atrLen)[1]
+
+// --- 6. FILTRO DE SESIONES (UTC) ---
+londonSession = not na(time(timeframe.period, "0800-1700", "UTC"))
+nySession     = not na(time(timeframe.period, "1300-2200", "UTC"))
+enSesion      = londonSession or nySession
+
+// --- 7. LÓGICA DE SEÑALES ---
+tendAlcista = close > emaTend
+tendBajista = close < emaTend
+
+compra = ta.crossover(emaRapida, emaLenta)
+       and macdLine > signalLine
+       and tendAlcista
+       and tendenciaFuerte
+       and rsi < 65
+       and enSesion
+
+venta = ta.crossunder(emaRapida, emaLenta)
+      and macdLine < signalLine
+      and tendBajista
+      and tendenciaFuerte
+      and rsi > 35
+      and enSesion
+
+// --- 8. EJECUCIÓN ---
+slPuntos = atr * atrMult
+tpPuntos = slPuntos * 2.0
+
+if compra and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("SL/TP Long", "Long",
+         loss=slPuntos / syminfo.mintick,
+         profit=tpPuntos / syminfo.mintick)
+
+if venta and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("SL/TP Short", "Short",
+         loss=slPuntos / syminfo.mintick,
+         profit=tpPuntos / syminfo.mintick)
+
+// --- 9. DIBUJAR ---
+plot(emaRapida, color=color.new(color.blue, 0),   linewidth=1, title="EMA 9")
+plot(emaLenta,  color=color.new(color.orange, 0), linewidth=1, title="EMA 21")
+plot(emaTend,   color=color.new(color.gray, 20),  linewidth=2, title="EMA 200")
+
+bgcolor(enSesion ? color.new(color.blue, 92) : na, title="Sesión Londres/NY")
+
+plotshape(compra, title="COMPRA", location=location.belowbar, color=color.green, style=shape.labelup,   size=size.small, text="BUY",  textcolor=color.white)
+plotshape(venta,  title="VENTA",  location=location.abovebar, color=color.red,   style=shape.labeldown, size=size.small, text="SELL", textcolor=color.white)
