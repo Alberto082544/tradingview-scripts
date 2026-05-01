@@ -1,0 +1,62 @@
+//@version=6
+indicator("Señales Intradía EMA + MACD v2", overlay=true)
+
+// --- 1. MEDIAS MÓVILES ---
+emaRapidaLen = input.int(9,   title="EMA Rápida",    group="EMAs")
+emaLentaLen  = input.int(21,  title="EMA Lenta",     group="EMAs")
+emaTendLen   = input.int(200, title="EMA Tendencia", group="EMAs")
+
+emaRapida = ta.ema(close, emaRapidaLen)
+emaLenta  = ta.ema(close, emaLentaLen)
+emaTend   = ta.ema(close, emaTendLen)
+
+// --- 2. MACD (valores estándar) ---
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+// --- 3. RSI (filtro de zonas extremas) ---
+rsi = ta.rsi(close, 14)
+
+// --- 4. FILTRO DE SESIONES (UTC) ---
+// Londres: 08:00-17:00 | Nueva York: 13:00-22:00
+londonSession = not na(time(timeframe.period, "0800-1700", "UTC"))
+nySession     = not na(time(timeframe.period, "1300-2200", "UTC"))
+enSesion      = londonSession or nySession
+
+// --- 5. LÓGICA DE SEÑALES ---
+// Filtro de tendencia: solo comprar sobre EMA 200, solo vender bajo EMA 200
+tendAlcista = close > emaTend
+tendBajista = close < emaTend
+
+// RSI: evitar entrar en zonas de agotamiento (no sobreoptimizado, margen amplio)
+rsiOk_compra = rsi < 65
+rsiOk_venta  = rsi > 35
+
+compra = ta.crossover(emaRapida, emaLenta)
+       and macdLine > signalLine
+       and tendAlcista
+       and rsiOk_compra
+       and enSesion
+
+venta = ta.crossunder(emaRapida, emaLenta)
+      and macdLine < signalLine
+      and tendBajista
+      and rsiOk_venta
+      and enSesion
+
+// --- 6. DIBUJAR EN EL GRÁFICO ---
+plot(emaRapida, color=color.new(color.blue, 0),   linewidth=1, title="EMA 9")
+plot(emaLenta,  color=color.new(color.orange, 0), linewidth=1, title="EMA 21")
+plot(emaTend,   color=color.new(color.gray, 20),  linewidth=2, title="EMA 200")
+
+// Fondo suave para visualizar sesiones activas
+bgcolor(enSesion ? color.new(color.blue, 92) : na, title="Sesión Londres/NY")
+
+// Señales
+plotshape(compra, title="COMPRA", location=location.belowbar, color=color.green, style=shape.labelup,   size=size.small, text="BUY",  textcolor=color.white)
+plotshape(venta,  title="VENTA",  location=location.abovebar, color=color.red,   style=shape.labeldown, size=size.small, text="SELL", textcolor=color.white)
+
+// --- 7. ALERTAS ---
+if compra
+    alert("COMPRA | EMA cruce alcista + MACD + Tendencia + Sesion", alert.freq_once_per_bar_close)
+if venta
+    alert("VENTA  | EMA cruce bajista + MACD + Tendencia + Sesion", alert.freq_once_per_bar_close)
