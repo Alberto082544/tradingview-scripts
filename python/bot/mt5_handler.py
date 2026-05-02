@@ -12,13 +12,16 @@ except ImportError:
     print("[MT5] MetaTrader5 no instalado — modo solo Telegram")
 
 SYMBOL_MAP = {
-    "XAUUSD": "XAUUSD",
-    "SPX":    "SPX500",
-    "SPY":    "SPX500",
-    "US500":  "SPX500",
-    "NAS100": "NAS100",
-    "BTCUSD": "BTCUSD",
-    "EURUSD": "EURUSD",
+    "XAUUSD":    "XAUUSD",
+    "SPX":       "SPX500",
+    "SPY":       "SPX500",
+    "US500":     "SPX500",
+    "SPX500":    "SPX500",
+    "NAS100":    "NDX100",
+    "NAS100USD": "NDX100",
+    "NDX100":    "NDX100",
+    "BTCUSD":    "BTCUSD",
+    "EURUSD":    "EURUSD",
 }
 
 
