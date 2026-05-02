@@ -16,7 +16,10 @@ SYMBOL_MAP = {
     "SPX":    "US500",
     "SPY":    "US500",
     "US500":  "US500",
+    "ES1!":   "US500",   # S&P 500 futuros → MT5 US500
     "NAS100": "NAS100",
+    "NQ1!":   "NAS100",  # Nasdaq futuros → MT5 NAS100
+    "NDX":    "NAS100",
     "BTCUSD": "BTCUSD",
     "EURUSD": "EURUSD",
 }
@@ -46,14 +49,22 @@ def execute_order(signal: str, ticker: str, sl: float, tp: float) -> dict:
 
     symbol = SYMBOL_MAP.get(ticker, ticker)
 
-    # Verificar que el símbolo existe y está disponible
+    import time
+
+    # Verificar que el símbolo existe
     info = mt5.symbol_info(symbol)
     if info is None:
         mt5.shutdown()
         return {"success": False, "error": f"Símbolo {symbol} no encontrado en MT5"}
 
+    # Añadir al Market Watch y esperar a que cargue
     if not info.visible:
         mt5.symbol_select(symbol, True)
+        for _ in range(10):
+            time.sleep(0.5)
+            info = mt5.symbol_info(symbol)
+            if info and info.visible:
+                break
 
     tick = mt5.symbol_info_tick(symbol)
     if tick is None:
