@@ -1,0 +1,116 @@
+//@version=6
+// BVortex Multi-activo | ADX>=25 | ATR x1.5 | Ratio 2:1
+// Cargarlo en cada grafico que quieras monitorizar
+// La alerta manda JSON con ticker + TF + SL + TP al webhook
+strategy("BVortex Multi", shorttitle="BVx Multi",
+     overlay                = true,
+     process_orders_on_close = true,
+     default_qty_type       = strategy.percent_of_equity,
+     default_qty_value      = 10,
+     initial_capital        = 10000,
+     commission_type        = strategy.commission.percent,
+     commission_value       = 0.05)
+
+// ── INPUTS ────────────────────────────────────────────────────────────────
+length     = input.int(14,    "Periodo Vortex",        minval=1,  group="BVortex")
+scale      = input.float(2.5, "Escala",                step=0.1,  group="BVortex")
+up_level   = input.float(17,  "Extremo UP",            step=0.5,  group="BVortex")
+down_level = input.float(-17, "Extremo DOWN",          step=0.5,  group="BVortex")
+swing_bars = input.int(5,     "Pivotes tendencia",     minval=3,  group="Gestión de riesgo")
+rr_ratio   = input.float(2.0, "Ratio TP:SL",          step=0.5,  minval=0.5, group="Gestión de riesgo")
+atr_mult   = input.float(1.5, "Multiplicador ATR SL", step=0.1,  minval=0.5, group="Gestión de riesgo")
+adx_min    = input.int(25,    "ADX mínimo",           minval=10, group="Filtros")
+show_labels = input.bool(true, "Mostrar etiquetas",               group="Visual")
+
+// ── VORTEX ────────────────────────────────────────────────────────────────
+tr       = math.max(high - low, math.max(math.abs(high - close[1]), math.abs(low - close[1])))
+vm_plus  = math.abs(high - low[1])
+vm_minus = math.abs(low  - high[1])
+atr_sum  = math.sum(tr, length)
+vi_plus  = math.sum(vm_plus,  length) / atr_sum
+vi_minus = math.sum(vm_minus, length) / atr_sum
+vortex   = (vi_plus - vi_minus) * length * scale
+atr_val  = ta.atr(14)
+
+// ── ADX ───────────────────────────────────────────────────────────────────
+[_, _, adx] = ta.dmi(14, 14)
+adx_ok = adx >= adx_min
+
+// ── ESTADOS ───────────────────────────────────────────────────────────────
+at_up   = vortex >= up_level
+at_down = vortex <= down_level
+exit_up   = at_up[1]   and not at_up
+exit_down = at_down[1] and not at_down
+trigger_buy  = exit_down and close > open
+trigger_sell = exit_up   and close < open
+
+// ── TENDENCIA ─────────────────────────────────────────────────────────────
+pivot_high = ta.pivothigh(high, swing_bars, swing_bars)
+pivot_low  = ta.pivotlow(low,  swing_bars, swing_bars)
+var float last_ph1 = na
+var float last_ph2 = na
+var float last_pl1 = na
+var float last_pl2 = na
+if not na(pivot_high)
+    last_ph2 := last_ph1
+    last_ph1 := pivot_high
+if not na(pivot_low)
+    last_pl2 := last_pl1
+    last_pl1 := pivot_low
+
+trend_bull = not na(last_ph1) and not na(last_ph2) and not na(last_pl1) and not na(last_pl2) and
+             last_ph1 > last_ph2 and last_pl1 > last_pl2
+trend_bear = not na(last_ph1) and not na(last_ph2) and not na(last_pl1) and not na(last_pl2) and
+             last_ph1 < last_ph2 and last_pl1 < last_pl2
+
+// ── ENTRADAS ──────────────────────────────────────────────────────────────
+if strategy.position_size == 0
+    if trend_bull and trigger_buy and adx_ok
+        sl = close - atr_val * atr_mult
+        tp = close + (close - sl) * rr_ratio
+        strategy.entry("Long", strategy.long)
+        strategy.exit("SL/TP Long", "Long", stop=sl, limit=tp)
+        if show_labels
+            label.new(bar_index, low - (high-low)*0.5,
+                 text="▲ LONG\nSL "+str.tostring(math.round(sl,2))+"\nTP "+str.tostring(math.round(tp,2)),
+                 color=color.new(color.green,20), textcolor=color.white,
+                 style=label.style_label_up, size=size.small)
+    if trend_bear and trigger_sell and adx_ok
+        sl = close + atr_val * atr_mult
+        tp = close - (sl - close) * rr_ratio
+        strategy.entry("Short", strategy.short)
+        strategy.exit("SL/TP Short", "Short", stop=sl, limit=tp)
+        if show_labels
+            label.new(bar_index, high + (high-low)*0.5,
+                 text="▼ SHORT\nSL "+str.tostring(math.round(sl,2))+"\nTP "+str.tostring(math.round(tp,2)),
+                 color=color.new(color.red,20), textcolor=color.white,
+                 style=label.style_label_down, size=size.small)
+
+// ── PLOT ──────────────────────────────────────────────────────────────────
+bar_col = at_up or at_down ? color.new(color.blue,0) :
+          exit_up or exit_down ? color.new(color.white,0) : color.new(color.gray,30)
+plot(vortex, "BVortex", style=plot.style_histogram, color=bar_col, linewidth=2, display=display.pane)
+hline(0, "Cero", color=color.new(color.gray,60), linestyle=hline.style_solid)
+hline(up_level, "UP", color=color.new(color.white,40), linestyle=hline.style_dashed)
+hline(down_level, "DOWN", color=color.new(color.white,40), linestyle=hline.style_dashed)
+bgcolor(trend_bull ? color.new(color.green,95) : trend_bear ? color.new(color.red,95) : na)
+
+// ── ALERTAS JSON ──────────────────────────────────────────────────────────
+sl_buy  = close - atr_val * atr_mult
+tp_buy  = close + (close - sl_buy) * rr_ratio
+sl_sell = close + atr_val * atr_mult
+tp_sell = close - (sl_sell - close) * rr_ratio
+
+if trend_bull and trigger_buy and adx_ok
+    alert('{"signal":"LONG","ticker":"'  + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close,2))  +
+          ',"sl":'     + str.tostring(math.round(sl_buy,2)) +
+          ',"tp":'     + str.tostring(math.round(tp_buy,2)) + '}',
+          alert.freq_once_per_bar)
+
+if trend_bear and trigger_sell and adx_ok
+    alert('{"signal":"SHORT","ticker":"' + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close,2))   +
+          ',"sl":'     + str.tostring(math.round(sl_sell,2)) +
+          ',"tp":'     + str.tostring(math.round(tp_sell,2)) + '}',
+          alert.freq_once_per_bar)
