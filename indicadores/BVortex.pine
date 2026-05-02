@@ -1,0 +1,130 @@
+//@version=6
+indicator("BVortex", shorttitle="BVortex", overlay=false, max_bars_back=500)
+
+// ── INPUTS ────────────────────────────────────────────────────────────────
+length     = input.int(14,    "Periodo",         minval=1,   group="Configuración")
+scale      = input.float(2.5, "Escala",          step=0.1,   group="Configuración")
+up_level   = input.float(17,  "UP",              step=0.5,   group="Niveles extremo")
+down_level = input.float(-17, "DOWN",            step=0.5,   group="Niveles extremo")
+show_table = input.bool(true, "Mostrar tabla",               group="Visual")
+
+// ── VORTEX INDICATOR ──────────────────────────────────────────────────────
+// True Range
+tr = math.max(high - low,
+     math.max(math.abs(high - close[1]),
+              math.abs(low  - close[1])))
+
+// Directional movement
+vm_plus  = math.abs(high - low[1])   // movimiento alcista
+vm_minus = math.abs(low  - high[1])  // movimiento bajista
+
+// Sumas acumuladas
+atr_sum      = math.sum(tr,       length)
+vi_plus      = math.sum(vm_plus,  length) / atr_sum
+vi_minus     = math.sum(vm_minus, length) / atr_sum
+
+// Histograma escalado (rango natural ≈ ±17 con length=14, scale=2.5)
+vortex = (vi_plus - vi_minus) * length * scale
+
+// ── ESTADOS ───────────────────────────────────────────────────────────────
+at_up    = vortex >= up_level
+at_down  = vortex <= down_level
+neutral  = not at_up and not at_down
+
+// Primer bar fuera del extremo = posible gatillo
+exit_up   = at_up[1]   and not at_up
+exit_down = at_down[1] and not at_down
+
+// Gatillo confirmado: sale del extremo + vela cierra a favor
+trigger_sell = exit_up   and close < open   // sale de extremo alto  → venta
+trigger_buy  = exit_down and close > open   // sale de extremo bajo  → compra
+
+// ── COLORES ───────────────────────────────────────────────────────────────
+col_neutral  = color.new(color.gray,  30)
+col_extreme  = color.new(color.blue,   0)
+col_trigger  = color.new(color.white,  0)
+
+bar_col = at_up or at_down ? col_extreme :
+          exit_up or exit_down ? col_trigger :
+          col_neutral
+
+// ── HISTOGRAMA ────────────────────────────────────────────────────────────
+plot(vortex, "BVortex",
+     style    = plot.style_histogram,
+     color    = bar_col,
+     linewidth = 2)
+
+// Línea cero
+hline(0, "Cero", color=color.new(color.gray, 60), linestyle=hline.style_solid)
+
+// Niveles extremo
+hline(up_level,   "UP",   color=color.new(color.white, 40), linestyle=hline.style_dashed)
+hline(down_level, "DOWN", color=color.new(color.white, 40), linestyle=hline.style_dashed)
+
+// ── MARCADORES ────────────────────────────────────────────────────────────
+// Puntos azules en los extremos
+plotshape(at_up,   "Extremo UP",
+     shape    = shape.circle,
+     location = location.absolute,
+     color    = color.new(color.blue, 0),
+     size     = size.tiny)
+
+plotshape(at_down, "Extremo DOWN",
+     shape    = shape.circle,
+     location = location.absolute,
+     color    = color.new(color.blue, 0),
+     size     = size.tiny)
+
+// Flechas de gatillo
+plotshape(trigger_buy,  "Gatillo Compra",
+     shape    = shape.triangleup,
+     location = location.bottom,
+     color    = color.new(color.green, 0),
+     size     = size.small)
+
+plotshape(trigger_sell, "Gatillo Venta",
+     shape    = shape.triangledown,
+     location = location.top,
+     color    = color.new(color.red, 0),
+     size     = size.small)
+
+// ── ALERTAS ───────────────────────────────────────────────────────────────
+alertcondition(trigger_buy,  "BVortex — Gatillo COMPRA", "BVortex: posible fin de pullback bajista")
+alertcondition(trigger_sell, "BVortex — Gatillo VENTA",  "BVortex: posible fin de pullback alcista")
+alertcondition(at_up,        "BVortex — Extremo UP",     "BVortex: histograma en extremo alto")
+alertcondition(at_down,      "BVortex — Extremo DOWN",   "BVortex: histograma en extremo bajo")
+
+// ── TABLA DE ESTADO ───────────────────────────────────────────────────────
+if show_table and barstate.islast
+    estado_txt  = at_up   ? "EXTREMO ↑" : at_down ? "EXTREMO ↓" : "Neutro"
+    estado_col  = at_up or at_down ? color.blue : color.new(color.gray, 30)
+    gatillo_txt = trigger_buy  ? "COMPRA ▲"  :
+                  trigger_sell ? "VENTA  ▼"  : "—"
+    gatillo_col = trigger_buy  ? color.green :
+                  trigger_sell ? color.red   : color.gray
+
+    t = table.new(position.top_right, 2, 3,
+         bgcolor      = color.new(color.black, 60),
+         border_width = 1,
+         border_color = color.new(color.gray, 50))
+
+    table.cell(t, 0, 0, "BVortex",
+         text_color = color.white,
+         text_size  = size.small)
+    table.cell(t, 1, 0, str.tostring(math.round(vortex, 2)),
+         text_color = vortex >= 0 ? color.blue : color.gray,
+         text_size  = size.small)
+
+    table.cell(t, 0, 1, "Estado",
+         text_color = color.new(color.gray, 20),
+         text_size  = size.small)
+    table.cell(t, 1, 1, estado_txt,
+         text_color = estado_col,
+         text_size  = size.small)
+
+    table.cell(t, 0, 2, "Gatillo",
+         text_color = color.new(color.gray, 20),
+         text_size  = size.small)
+    table.cell(t, 1, 2, gatillo_txt,
+         text_color = gatillo_col,
+         text_size  = size.small)
