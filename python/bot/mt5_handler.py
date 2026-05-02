@@ -13,13 +13,10 @@ except ImportError:
 
 SYMBOL_MAP = {
     "XAUUSD": "XAUUSD",
-    "SPX":    "US500",
-    "SPY":    "US500",
-    "US500":  "US500",
-    "ES1!":   "US500",   # S&P 500 futuros → MT5 US500
+    "SPX":    "SPX500",
+    "SPY":    "SPX500",
+    "US500":  "SPX500",
     "NAS100": "NAS100",
-    "NQ1!":   "NAS100",  # Nasdaq futuros → MT5 NAS100
-    "NDX":    "NAS100",
     "BTCUSD": "BTCUSD",
     "EURUSD": "EURUSD",
 }
