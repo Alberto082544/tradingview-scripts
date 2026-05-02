@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from flask import Flask, request, jsonify
 from telegram_notifier import send_message, format_signal
+from mt5_handler import execute_order
 from config import WEBHOOK_SECRET, PORT
 
 app = Flask(__name__)
@@ -13,27 +14,36 @@ app = Flask(__name__)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    # Verificar secret en header o query param
     secret = request.args.get("secret") or request.headers.get("X-Secret", "")
     if secret != WEBHOOK_SECRET:
         return jsonify({"error": "unauthorized"}), 401
 
-    # TradingView manda el body como texto plano (el mensaje de la alerta)
     raw = request.get_data(as_text=True)
     print(f"[Webhook] Recibido: {raw}")
 
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        # Si no es JSON válido, mandamos el texto tal cual
         send_message(f"⚠️ Señal recibida (sin parsear):\n{raw}")
         return jsonify({"status": "ok", "parsed": False})
 
+    # 1) Telegram
     msg = format_signal(data)
-    ok  = send_message(msg)
-    print(f"[Telegram] Enviado: {ok}")
+    ok_tg = send_message(msg)
+    print(f"[Telegram] Enviado: {ok_tg}")
 
-    return jsonify({"status": "ok", "telegram": ok})
+    # 2) MT5
+    signal = data.get("signal", "")
+    ticker = data.get("ticker", "")
+    sl     = data.get("sl", 0)
+    tp     = data.get("tp", 0)
+
+    mt5_result = {"success": False, "error": "sin datos"}
+    if signal in ("LONG", "SHORT") and ticker and sl and tp:
+        mt5_result = execute_order(signal, ticker, float(sl), float(tp))
+        print(f"[MT5] {mt5_result}")
+
+    return jsonify({"status": "ok", "telegram": ok_tg, "mt5": mt5_result})
 
 
 @app.route("/ping", methods=["GET"])

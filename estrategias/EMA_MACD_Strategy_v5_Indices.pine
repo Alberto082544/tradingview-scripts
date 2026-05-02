@@ -64,5 +64,13 @@ plot(ema50d,    color=color.new(color.purple, 30), linewidth=1, title="EMA 50D",
 
 plotshape(compra, title="COMPRA", location=location.belowbar, color=color.green, style=shape.labelup, size=size.small, text="BUY", textcolor=color.white)
 
+// ── ALERTAS JSON ──────────────────────────────────────────────────────────────
+sl_buy = close - atr * atrMult
+tp_buy = close + atr * atrMult * 2.0
+
 if compra
-    alert("COMPRA | EMA+MACD+ADX+EMA50D confirmados", alert.freq_once_per_bar_close)
+    alert('{"signal":"LONG","ticker":"'  + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close, 2)) +
+          ',"sl":'     + str.tostring(math.round(sl_buy, 2)) +
+          ',"tp":'     + str.tostring(math.round(tp_buy, 2)) + '}',
+          alert.freq_once_per_bar_close)
