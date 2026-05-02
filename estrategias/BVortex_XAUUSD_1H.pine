@@ -95,8 +95,22 @@ hline(up_level, "UP", color=color.new(color.white,40), linestyle=hline.style_das
 hline(down_level, "DOWN", color=color.new(color.white,40), linestyle=hline.style_dashed)
 bgcolor(trend_bull ? color.new(color.green,95) : trend_bear ? color.new(color.red,95) : na)
 
-// ── ALERTAS ───────────────────────────────────────────────────────────────
+// ── ALERTAS JSON (para webhook → Telegram) ────────────────────────────────
+sl_buy  = close - atr_val * atr_mult
+tp_buy  = close + (close - sl_buy) * rr_ratio
+sl_sell = close + atr_val * atr_mult
+tp_sell = close - (sl_sell - close) * rr_ratio
+
 if trend_bull and trigger_buy and adx_ok
-    alert("BVortex LONG — " + syminfo.ticker + " " + timeframe.period + "m", alert.freq_once_per_bar)
+    alert('{"signal":"LONG","ticker":"'  + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close,2))  +
+          ',"sl":'     + str.tostring(math.round(sl_buy,2)) +
+          ',"tp":'     + str.tostring(math.round(tp_buy,2)) + '}',
+          alert.freq_once_per_bar)
+
 if trend_bear and trigger_sell and adx_ok
-    alert("BVortex SHORT — " + syminfo.ticker + " " + timeframe.period + "m", alert.freq_once_per_bar)
+    alert('{"signal":"SHORT","ticker":"' + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close,2))   +
+          ',"sl":'     + str.tostring(math.round(sl_sell,2)) +
+          ',"tp":'     + str.tostring(math.round(tp_sell,2)) + '}',
+          alert.freq_once_per_bar)
