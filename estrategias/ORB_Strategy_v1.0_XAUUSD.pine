@@ -1,0 +1,98 @@
+//@version=6
+// Config C optimizada: Long solo | bufPts=2 | minRng=5 | maxRng=50 | tpMult=4 | Factor Long ~1.387
+strategy("ORB Strategy v1.0 [Solo Long - XAUUSD 30min]",
+     overlay=true,
+     initial_capital=10000,
+     currency=currency.USD,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=1.0,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     slippage=2,
+     process_orders_on_close=false)
+
+// ── INPUTS ────────────────────────────────────────────────────────────────
+bufPts = input.float(2.0,  title="Buffer SL (pts)",    group="ORB",     step=0.5)
+minRng = input.float(5.0,  title="Rango mínimo (pts)", group="ORB",     step=0.5)
+maxRng = input.float(50.0, title="Rango máximo (pts)", group="ORB",     step=1.0)
+tpMult = input.float(4.0,  title="TP Multiplicador",   group="ORB",     step=0.5)
+emaLen = input.int(200,    title="EMA Tendencia",       group="Filtros")
+usaEma = input.bool(true,  title="Usar filtro EMA",    group="Filtros")
+maxTpd = input.int(2,      title="Máx. trades/día",    group="Gestión")
+
+// ── SESIÓN COMEX (8:30 AM ET — apertura oro + datos macro EE.UU.) ─────────
+enORB = not na(time("30", "0830-0900", "America/New_York"))
+enNY  = not na(time("30", "0900-1700", "America/New_York"))
+
+// ── INDICADORES ───────────────────────────────────────────────────────────
+ema200 = ta.ema(close, emaLen)
+
+var float cumTP  = 0.0
+var float cumVol = 0.0
+if dayofmonth != dayofmonth[1]
+    cumTP  := 0.0
+    cumVol := 0.0
+hasVol = not na(volume) and volume > 0
+if hasVol
+    cumTP  += ((high + low + close) / 3.0) * volume
+    cumVol += volume
+vwapDia = cumVol > 0 ? cumTP / cumVol : na
+
+// ── ORB: CAPTURAR PRIMERA VELA 8:30-9:00 AM ET ───────────────────────────
+var float orbH = na
+var float orbL = na
+if dayofmonth != dayofmonth[1]
+    orbH := na
+    orbL := na
+if enORB
+    orbH := high
+    orbL := low
+
+// ── FILTROS ───────────────────────────────────────────────────────────────
+orbRng    = nz(orbH) - nz(orbL)
+rngValido = not na(orbH) and orbRng >= minRng and orbRng <= maxRng
+tendAlc   = usaEma ? close > ema200 : true
+sobreVwap = na(vwapDia) or close > vwapDia
+
+// ── CONTADOR TRADES DEL DÍA ───────────────────────────────────────────────
+var int tradesHoy = 0
+if dayofmonth != dayofmonth[1]
+    tradesHoy := 0
+
+// ── SL / TP ───────────────────────────────────────────────────────────────
+slVal = orbL - bufPts
+tpVal = orbH + orbRng * tpMult
+
+// ── SEÑAL LONG ────────────────────────────────────────────────────────────
+crossUp = ta.crossover(close, orbH)
+
+compra = enNY and
+         not na(orbH) and
+         crossUp and
+         tendAlc and
+         sobreVwap and
+         rngValido and
+         strategy.position_size == 0 and
+         tradesHoy < maxTpd
+
+// ── EJECUCIÓN ─────────────────────────────────────────────────────────────
+if compra
+    strategy.entry("Long ORB", strategy.long)
+    strategy.exit("SL/TP", "Long ORB", stop=slVal, limit=tpVal)
+    tradesHoy += 1
+
+// ── VISUAL ────────────────────────────────────────────────────────────────
+plot(ema200,  color=color.new(color.gray, 20), linewidth=2, title="EMA 200")
+plot(vwapDia, color=color.new(color.blue, 30), linewidth=1, title="VWAP Diario")
+plot(not na(orbH) ? orbH : na, color=color.new(color.green, 0), style=plot.style_stepline, linewidth=1, title="ORB High")
+plot(not na(orbL) ? orbL : na, color=color.new(color.red,   0), style=plot.style_stepline, linewidth=1, title="ORB Low")
+bgcolor(enORB ? color.new(color.yellow, 88) : na, title="Ventana ORB")
+plotshape(compra, title="LONG ORB", location=location.belowbar, color=color.green, style=shape.labelup, size=size.small, text="ORB", textcolor=color.white)
+
+// ── ALERTA JSON ───────────────────────────────────────────────────────────
+if compra
+    alert('{"signal":"LONG","ticker":"' + syminfo.ticker + '","tf":"' + timeframe.period +
+          '","close":' + str.tostring(math.round(close, 2)) +
+          ',"sl":'     + str.tostring(math.round(slVal, 2)) +
+          ',"tp":'     + str.tostring(math.round(tpVal, 2)) + '}',
+          alert.freq_once_per_bar_close)
