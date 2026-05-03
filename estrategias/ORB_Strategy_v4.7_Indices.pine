@@ -11,24 +11,22 @@ strategy("ORB Strategy v4.7 [Solo Long - Indices 30min]",
      process_orders_on_close=false)
 
 // ── INPUTS ────────────────────────────────────────────────────
-bufPts = input.float(2.0,  title="Buffer SL (pts)",    group="ORB",      step=0.5)
-minRng = input.float(3.0,  title="Rango mínimo (pts)", group="ORB",      step=0.5)
-maxRng = input.float(50.0, title="Rango máximo (pts)", group="ORB",      step=1.0)
-tpMult = input.float(10.0, title="TP Multiplicador",   group="ORB",      step=0.5)
-emaLen = input.int(200,    title="EMA Tendencia",       group="Filtros")
-maxTpd = input.int(2,      title="Máx. trades/día",    group="Gestión")
+bufPts = input.float(2.0,   title="Buffer SL (pts)",    group="ORB",     step=0.5)
+minRng = input.float(3.0,   title="Rango mínimo (pts)", group="ORB",     step=0.5)
+maxRng = input.float(300.0, title="Rango máximo (pts)", group="ORB",     step=5.0)
+tpMult = input.float(3.0,   title="TP Multiplicador",   group="ORB",     step=0.5)
+emaLen = input.int(200,     title="EMA Tendencia",       group="Filtros")
+maxTpd = input.int(2,       title="Máx. trades/día",    group="Gestión")
 
-// ── SESIÓN NY (UTC) ───────────────────────────────────────────
-// Primera vela NY: 13:30-14:00 UTC (9:30-10:00 AM ET en horario de verano EDT)
-enORB = not na(time("30", "1330-1400", "UTC"))
-// Ventana de entrada: después del ORB hasta cierre
-enNY  = not na(time("30", "1400-2100", "UTC"))
+// ── SESIÓN NY (America/New_York — funciona en EDT y EST) ──────
+// Primera vela: 9:30-10:00 AM NY (incluye cambio de hora verano/invierno)
+enORB = not na(time("30", "0930-1000", "America/New_York"))
+enNY  = not na(time("30", "1000-1600", "America/New_York"))
 
 // ── INDICADORES ───────────────────────────────────────────────
 ema200 = ta.ema(close, emaLen)
 
-// VWAP diario — si el símbolo no tiene volumen real (ej: índices cash),
-// el filtro se desactiva automáticamente para no bloquear todas las entradas
+// VWAP diario — si no hay volumen real (índices cash), se desactiva automáticamente
 var float cumTP  = 0.0
 var float cumVol = 0.0
 if dayofmonth != dayofmonth[1]
@@ -43,11 +41,9 @@ vwapDia = cumVol > 0 ? cumTP / cumVol : na
 // ── ORB: CAPTURAR PRIMERA VELA NY ─────────────────────────────
 var float orbH = na
 var float orbL = na
-
 if dayofmonth != dayofmonth[1]
     orbH := na
     orbL := na
-
 if enORB
     orbH := high
     orbL := low
@@ -56,7 +52,6 @@ if enORB
 orbRng    = nz(orbH) - nz(orbL)
 rngValido = not na(orbH) and orbRng >= minRng and orbRng <= maxRng
 tendAlc   = close > ema200
-// VWAP: si no hay volumen disponible (índices cash), el filtro pasa automáticamente
 sobreVwap = na(vwapDia) or close > vwapDia
 
 // ── CONTADOR TRADES DEL DÍA ───────────────────────────────────
