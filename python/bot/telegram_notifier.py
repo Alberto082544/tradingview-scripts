@@ -59,6 +59,5 @@ def format_signal(data: dict) -> str:
         f"🛑 SL      : <b>{sl}</b>  ({riesgo} pts)\n"
         f"🎯 TP      : <b>{tp}</b>  ({beneficio} pts)\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"MT5 → <code>{mt5_dir} {ticker} SL:{sl} TP:{tp}</code>\n"
-        f"▶️ <b>Activa el bot en MT5 — {dir_txt}</b>"
+        f"🤖 MT5 → <code>{mt5_dir} {ticker} SL:{sl} TP:{tp}</code>"
     )
