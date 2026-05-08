@@ -1,0 +1,73 @@
+; Parámetros fijos
+InpPreset=15
+InpGMT=0
+InpRiskMode=1
+InpRiskValor=0.02
+InpMaxPerDay=2
+InpMaxTotal=4
+InpMaxLoss=3.0
+InpMagic=202610
+InpCSI=true
+InpVWAP=true
+InpDraw=false
+InpDashboard=false
+InpVerbose=false
+InpAlertPopup=false
+InpAlertPush=false
+InpAlertEmail=false
+
+; ── SESIÓN ──────────────────────────────────
+InpSession=0
+InpSession,F=true
+InpSession,0=0
+InpSession,1=2
+InpSession,2=1
+
+; ── TIMEFRAME ORB ───────────────────────────
+InpTF_ORB=2
+InpTF_ORB,F=true
+InpTF_ORB,0=0
+InpTF_ORB,1=2
+InpTF_ORB,2=1
+
+; ── RANGO MÍNIMO ORB ────────────────────────
+InpMinRangePts=30
+InpMinRangePts,F=true
+InpMinRangePts,0=10
+InpMinRangePts,1=80
+InpMinRangePts,2=10
+
+; ── MODO DE ENTRADA ─────────────────────────
+InpEntry=0
+InpEntry,F=true
+InpEntry,0=0
+InpEntry,1=1
+InpEntry,2=1
+
+; ── TP1 (puntos) ────────────────────────────
+InpTP1=100.0
+InpTP1,F=true
+InpTP1,0=50.0
+InpTP1,1=300.0
+InpTP1,2=50.0
+
+; ── TP2 (puntos) ────────────────────────────
+InpTP2=300.0
+InpTP2,F=true
+InpTP2,0=150.0
+InpTP2,1=600.0
+InpTP2,2=50.0
+
+; ── GESTIÓN DE TRADE ────────────────────────
+InpTradeMgmt=1
+InpTradeMgmt,F=true
+InpTradeMgmt,0=0
+InpTradeMgmt,1=2
+InpTradeMgmt,2=1
+
+; ── BREAKEVEN OFFSET ────────────────────────
+InpBEOff=10.0
+InpBEOff,F=true
+InpBEOff,0=5.0
+InpBEOff,1=30.0
+InpBEOff,2=5.0

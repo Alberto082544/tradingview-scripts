@@ -13,13 +13,14 @@ except ImportError:
 
 SYMBOL_MAP = {
     "XAUUSD":    "XAUUSD",
-    "SPX":       "SPX500",
-    "SPY":       "SPX500",
-    "US500":     "SPX500",
-    "SPX500":    "SPX500",
-    "NAS100":    "NDX100",
-    "NAS100USD": "NDX100",
-    "NDX100":    "NDX100",
+    "SPX":       "US500",
+    "SPY":       "US500",
+    "US500":     "US500",
+    "SPX500":    "US500",
+    "NAS100":    "USTEC",
+    "NAS100USD": "USTEC",
+    "NDX100":    "USTEC",
+    "USTEC":     "USTEC",
     "BTCUSD":    "BTCUSD",
     "EURUSD":    "EURUSD",
 }
