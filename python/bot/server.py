@@ -10,17 +10,22 @@ from telegram_notifier import send_message, format_signal
 from mt5_handler import execute_order
 from config import WEBHOOK_SECRET, PORT
 
-# Logging a archivo (append)
-_log_path = os.path.join(os.path.dirname(__file__), "flask.log")
-_handler = logging.FileHandler(_log_path, encoding="utf-8")
-_handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s", datefmt="%d/%m/%Y %H:%M:%S"))
-logging.basicConfig(level=logging.INFO, handlers=[_handler])
+# El watchdog bat ya redirige stdout → flask.log; usamos stdout para no conflicto
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="[%(asctime)s] %(message)s",
+    datefmt="%d/%m/%Y %H:%M:%S",
+)
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# TradingView envía "buy"/"sell" — mapeamos a LONG/SHORT
-_ACTION = {"buy": "LONG", "sell": "SHORT", "long": "LONG", "short": "SHORT"}
+# TradingView envía "buy"/"sell". En UI español puede traducir la key a "señal"
+_ACTION = {
+    "buy": "LONG", "sell": "SHORT", "long": "LONG", "short": "SHORT",
+    "compra": "LONG", "venta": "SHORT",  # por si TradingView ES traduce los valores
+}
 
 
 @app.route("/webhook", methods=["POST"])
@@ -45,8 +50,8 @@ def webhook():
     ok_tg = send_message(msg)
     log.info("Telegram enviado: %s", ok_tg)
 
-    # Extraer campos — acepta "signal" o "action", y "buy"/"sell"
-    action  = str(data.get("signal", data.get("action", ""))).lower()
+    # Extraer campos — acepta "signal", "señal" (UI español de TV) o "action"
+    action  = str(data.get("signal", data.get("señal", data.get("action", "")))).lower()
     signal  = _ACTION.get(action, "")
     ticker  = str(data.get("ticker", "")).upper().strip()
     sl      = float(data.get("sl", 0) or 0)
