@@ -23,7 +23,28 @@ SYMBOL_MAP = {
     "USTEC":     "USTEC",
     "BTCUSD":    "BTCUSD",
     "EURUSD":    "EURUSD",
+    "GBPUSD":    "GBPUSD",
 }
+
+# SL/TP automático cuando la alerta no los envía (% sobre precio de entrada)
+# (sl_pct, tp_pct) → RR 1:2 por defecto
+_AUTO_SLTP = {
+    "XAUUSD":  (0.006, 0.012),
+    "US500":   (0.005, 0.010),
+    "USTEC":   (0.006, 0.012),
+    "EURUSD":  (0.003, 0.006),
+    "GBPUSD":  (0.003, 0.006),
+    "BTCUSD":  (0.010, 0.020),
+    "_DEFAULT": (0.005, 0.010),
+}
+
+
+def _auto_sltp(symbol: str, signal: str, price: float):
+    sl_pct, tp_pct = _AUTO_SLTP.get(symbol, _AUTO_SLTP["_DEFAULT"])
+    if signal == "LONG":
+        return round(price * (1 - sl_pct), 2), round(price * (1 + tp_pct), 2)
+    else:
+        return round(price * (1 + sl_pct), 2), round(price * (1 - tp_pct), 2)
 
 
 def _connect() -> bool:
@@ -39,8 +60,7 @@ def execute_order(signal: str, ticker: str, sl: float, tp: float) -> dict:
     """
     signal: "LONG" | "SHORT"
     ticker: ticker de TradingView (ej: "XAUUSD", "SPX")
-    sl, tp: niveles calculados por la estrategia
-    Devuelve dict con resultado.
+    sl, tp: 0 = calcular automáticamente
     """
     if not MT5_AVAILABLE:
         return {"success": False, "error": "MetaTrader5 no instalado"}
@@ -52,13 +72,11 @@ def execute_order(signal: str, ticker: str, sl: float, tp: float) -> dict:
 
     import time
 
-    # Verificar que el símbolo existe
     info = mt5.symbol_info(symbol)
     if info is None:
         mt5.shutdown()
         return {"success": False, "error": f"Símbolo {symbol} no encontrado en MT5"}
 
-    # Añadir al Market Watch y esperar a que cargue
     if not info.visible:
         mt5.symbol_select(symbol, True)
         for _ in range(10):
@@ -74,6 +92,11 @@ def execute_order(signal: str, ticker: str, sl: float, tp: float) -> dict:
 
     order_type = mt5.ORDER_TYPE_BUY if signal == "LONG" else mt5.ORDER_TYPE_SELL
     price = tick.ask if signal == "LONG" else tick.bid
+
+    # Auto SL/TP si la alerta no los envía
+    if sl == 0 or tp == 0:
+        sl, tp = _auto_sltp(symbol, signal, price)
+        print(f"[MT5] Auto SL/TP calculado: sl={sl} tp={tp}")
 
     request = {
         "action":       mt5.TRADE_ACTION_DEAL,
@@ -102,4 +125,6 @@ def execute_order(signal: str, ticker: str, sl: float, tp: float) -> dict:
         "order":   result.order,
         "volume":  result.volume,
         "price":   result.price,
+        "sl":      sl,
+        "tp":      tp,
     }
