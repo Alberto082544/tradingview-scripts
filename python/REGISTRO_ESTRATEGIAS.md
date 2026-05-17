@@ -118,11 +118,62 @@ Solo estrategias con IS + OOS + Robustez superados y EA listo.
 
 ---
 
+## ✅ AGM_Ranger_C_AUDCAD_M15 (VALIDADO pero NO operativo)
+- **Fecha validacion:** 2026-05-17
+- **Familia:** Ranger C (Mean Reversion)
+- **Par:** AUDCAD | **EA:** pendiente compilar (no creado aún MQL5)
+- **Params:** ADX_H4_Max=15, StochMode=1, Stoch_Long_Max=25, Stoch_Short_Min=75, MinSLPips=30, TrailDistPips=15, ExitBars=32
+
+| Metrica | IS 2014-2021 | OOS 2022-2025 |
+|---|---|---|
+| Profit Factor | 1.20 | **1.29** |
+| Drawdown | 8.9% | 4.6% |
+| Ann | — | **7.02%** |
+| WF | — | 1.075 |
+| MC P95 DD | — | 10.31% ⚠️ (al borde 10%) |
+
+**Checklist 6/7** (falla #7 por 0.31% — P95 justo encima de 10%)
+- 10/12 años positivos (2014 y 2018 levemente negativos, no catastróficos)
+
+**$/mes esperado en $15k a 0.5%:** ~$95 (modesto)
+
+**Estado: VALIDADO pero NO operativo** — añade DD agregado sin mucho profit.
+Mantener para después de pasar Phase 1 con los 3 principales como diversificación.
+
+---
+
+## ✅ AGM_XAUUSD_ORB_M15 v2.0 (4to bot — defensivo)
+- **Fecha validacion:** 2026-05-17 (adaptación de v1.0 a fondeo)
+- **Familia:** ORB (Opening Range Breakout) sesión NY
+- **Par:** XAUUSD | **Solo Largos**
+- **EA:** `MQL5\Experts\AGM_XAUUSD_ORB_M15.mq5`
+- **Strategy:** doble entrada TP1=0.5R + TP2=4R, SL=ORB low
+
+| Metrica | Backtest v1 ($50k 2020-25) | v2 esperado |
+|---|---|---|
+| Profit Factor | 1.32 | 1.32 |
+| Drawdown | 7.5% | **~2.3%** (con sizing reducido) |
+| Ann | 12.7% | ~3.8% |
+| WR | 52.6% | 52.6% |
+| WF | 1.21 | 1.21 |
+| Robustez | 6/6 años positivos ⭐ + 100% MC sims positivas | igual |
+| MC P95 DD | 9.6% | ~2.9% |
+
+**Cambios v2 para fondeo:**
+- RiskPct 0.5% → **0.15%** (DD margen al límite 5%)
+- Filtro noticias USD ±2min (5%ers requirement)
+- Circuit breakers (DD diario + SL streak)
+
+**$/mes esperado en $15k:** ~$49 (defensivo, no agresivo)
+
+**Apto FundedNext + The 5%ers:** ✅ ambos
+**LotRiskPct recomendado:** 0.15%
+
+---
+
 ## EN PROCESO (no añadir hasta validar)
 | Estrategia | Par | Estado | Pendiente |
 |---|---|---|---|
-| Ranger C | AUDCAD | Opt OK, WF=0.919 | Robustez year-by-year |
-| XAUUSD ORB | XAUUSD | Backtest OK 2020-25 PF=1.32 DD=7.5% | Adaptar sizing para DD<5% fondeo |
 | Jasper OB | TBD | Pine v6 en pendientes/ | Portar a Python, validar |
 
 ---
