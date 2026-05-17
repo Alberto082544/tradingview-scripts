@@ -1,0 +1,62 @@
+==============================================================
+  BOT: AGM_MA_Cross_EURUSD_M15
+==============================================================
+  Familia:        MA Cross (Tendencia)
+  Par:            EURUSD
+  Grafico MT5:    EURUSD — temporalidad M15  <- PONER AQUI EL EA
+  Filtro:         EMA5 > SMA21 en H4 (tendencia alcista/bajista)
+==============================================================
+  CAPITAL TESTEADO: $50,000
+  Periodo IS:  2014-2021 (8 años, entrenamiento)
+  Periodo OOS: 2022-2025 (4 años, validacion real)
+==============================================================
+  RESULTADOS OOS (los que importan):
+    PF:            1.36
+    Win Rate:      68.9%
+    Ann. return:   30.71%
+    Max Drawdown:  6.5%
+    Trades/año:    ~637
+    Trades/mes:    ~53
+    Ganancia/mes:  ~$1,986  (sobre $50,000)
+    Ganancia/año:  ~$23,829
+    PnL total OOS: ~$95,316 (4 años)
+
+  RESULTADO IS:
+    PF:            1.42  |  Ann: 26.71%  |  DD: 6.4%
+
+  WF Ratio: 0.958 ✅
+
+  RESULTADO FULL 2014-2025:
+    Ganancia total: $409,818
+    Ganancia/año:   $34,152
+    Ganancia/mes:   $2,846
+==============================================================
+  ROBUSTEZ:
+    12/12 años positivos ⭐
+    Peor año: 2017 PF=1.18 Ann=22.58%
+    Mejor año: 2020 PF=1.61 Ann=73.85%
+==============================================================
+  CHECKLIST ANTI-OVERFITTING: 7/7 ✅
+==============================================================
+  PARAMETROS OPTIMOS:
+    EMA rapida:      5
+    SMA lenta:       21
+    Filtro H4:       EMA5 > SMA21
+    SL:              2.0 * ATR
+    TP:              3.0 * SL  (RR=3)
+    Break-Even:      0.5 * ATR de ganancia
+    Trailing inicio: 1.5 * ATR de ganancia
+    Trailing dist:   0.5 * ATR
+    Riesgo/trade:    0.5%
+    Max Lotes:       4.0
+==============================================================
+  LOGICA:
+    H4: EMA5 > SMA21 → solo longs
+        EMA5 < SMA21 → solo shorts
+    M15: EMA5 cruza SMA21 en la direccion del H4
+    Gestion: BE a 0.5ATR, trailing a partir de 1.5ATR
+    El 98% de las salidas son por SL (BE movido o trailing)
+==============================================================
+  ARCHIVO EA: AGM_MA_Cross_EURUSD_M15.mq5
+  Ruta MT5:   MQL5\Experts\AGM_MA_Cross_EURUSD_M15.mq5
+==============================================================

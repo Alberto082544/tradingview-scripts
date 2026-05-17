@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trading-researcher"
+version = "0.1.0"
+description = "Crew de investigación diaria de estrategias de trading algorítmico"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai>=0.121.0",
+    "langchain-community>=0.3.0",
+    "duckduckgo-search>=7.0.0",
+    "ddgs>=9.14.4",
+    "youtube-transcript-api>=1.2.4",
+]
+
+[project.scripts]
+trading-researcher = "trading_researcher.main:run"
+
+[tool.crewai]
+type = "crew"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trading_researcher"]

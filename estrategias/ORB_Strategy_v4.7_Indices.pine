@@ -3,8 +3,8 @@ strategy("ORB Strategy v4.7 [Solo Long - Indices 30min]",
      overlay=true,
      initial_capital=10000,
      currency=currency.USD,
-     default_qty_type=strategy.percent_of_equity,
-     default_qty_value=0.25,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
      commission_type=strategy.commission.percent,
      commission_value=0.05,
      slippage=2,
@@ -18,8 +18,7 @@ tpMult = input.float(3.0,   title="TP Multiplicador",   group="ORB",     step=0.
 emaLen = input.int(200,     title="EMA Tendencia",       group="Filtros")
 maxTpd = input.int(2,       title="Máx. trades/día",    group="Gestión")
 
-// ── SESIÓN NY (America/New_York — funciona en EDT y EST) ──────
-// Primera vela: 9:30-10:00 AM NY (incluye cambio de hora verano/invierno)
+// ── SESIÓN NY ─────────────────────────────────────────────────
 enORB = not na(time("30", "0930-1000", "America/New_York"))
 enNY  = not na(time("30", "1000-1600", "America/New_York"))
 

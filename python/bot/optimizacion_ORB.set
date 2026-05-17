@@ -18,56 +18,56 @@ InpAlertEmail=false
 
 ; ── SESIÓN ──────────────────────────────────
 InpSession=0
-InpSession,F=true
+InpSession,F=1
 InpSession,0=0
 InpSession,1=2
 InpSession,2=1
 
 ; ── TIMEFRAME ORB ───────────────────────────
 InpTF_ORB=2
-InpTF_ORB,F=true
+InpTF_ORB,F=1
 InpTF_ORB,0=0
 InpTF_ORB,1=2
 InpTF_ORB,2=1
 
 ; ── RANGO MÍNIMO ORB ────────────────────────
 InpMinRangePts=30
-InpMinRangePts,F=true
+InpMinRangePts,F=1
 InpMinRangePts,0=10
 InpMinRangePts,1=80
 InpMinRangePts,2=10
 
 ; ── MODO DE ENTRADA ─────────────────────────
 InpEntry=0
-InpEntry,F=true
+InpEntry,F=1
 InpEntry,0=0
 InpEntry,1=1
 InpEntry,2=1
 
 ; ── TP1 (puntos) ────────────────────────────
 InpTP1=100.0
-InpTP1,F=true
+InpTP1,F=1
 InpTP1,0=50.0
 InpTP1,1=300.0
 InpTP1,2=50.0
 
 ; ── TP2 (puntos) ────────────────────────────
 InpTP2=300.0
-InpTP2,F=true
+InpTP2,F=1
 InpTP2,0=150.0
 InpTP2,1=600.0
 InpTP2,2=50.0
 
 ; ── GESTIÓN DE TRADE ────────────────────────
 InpTradeMgmt=1
-InpTradeMgmt,F=true
+InpTradeMgmt,F=1
 InpTradeMgmt,0=0
 InpTradeMgmt,1=2
 InpTradeMgmt,2=1
 
 ; ── BREAKEVEN OFFSET ────────────────────────
 InpBEOff=10.0
-InpBEOff,F=true
+InpBEOff,F=1
 InpBEOff,0=5.0
 InpBEOff,1=30.0
 InpBEOff,2=5.0

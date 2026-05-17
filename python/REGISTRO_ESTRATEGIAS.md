@@ -1,0 +1,91 @@
+# REGISTRO DE ESTRATEGIAS VALIDADAS
+Solo estrategias con IS + OOS + Robustez superados y EA listo.
+
+---
+
+## ✅ AGM_Ranger_C_AUDNZD_M15 v3.0 (DD<5% optimizado)
+- **Fecha validacion:** 2026-05-17
+- **Familia:** Ranger C (Mean Reversion)
+- **Par:** AUDNZD | **Grafico MT5:** AUDNZD en M15
+- **EA:** `MQL5\Experts\AGM_Ranger_C_AUDNZD_M15.mq5`
+- **Filtros entrada:** Stochastic(5,3,3) K<15 + ADX H4 < 20 (sin RSI)
+- **Trailing:** 4 pips (ajustado)
+
+| Metrica | IS 2014-2021 | OOS 2022-2025 |
+|---|---|---|
+| Profit Factor | 1.21 | **1.54** ⭐ |
+| Retorno anual | — | **25.39%** |
+| Drawdown max | 12.3% | **4.6%** ✅ |
+| Win Rate | — | 63.7% |
+| Trades OOS | — | 1,123 (~24/mes) |
+| WF ratio | — | **1.273** ⭐ |
+
+**LotRiskPct recomendado:** 0.5% → DD esperado ~3.3% (margen seguridad sobre 5%)
+**Apto FundedNext:** ✅ DD 4.6% < 5%
+**Apto The 5%ers:** ✅ DD 4.6% < 5%
+
+### Versiones anteriores (DEPRECADAS)
+- **v1.0** (2026-05-16): RSI+ADX<30 — PF=1.16, DD=12.6% — rompe DD<5%
+- **v2.0** (2026-05-17 AM): Stoch_Long_Max=25, Trail=8 — PF=1.26, DD=6.6% — rompe DD<5%
+
+**Capital testado:** $50,000
+
+---
+
+## ✅ AGM_MA_Cross_EURUSD_M15 v2.0 (DD<5% optimizado)
+- **Fecha validacion:** 2026-05-17
+- **Familia:** MA Cross (Tendencia)
+- **Par:** EURUSD | **Grafico MT5:** EURUSD en M15
+- **EA:** `MQL5\Experts\AGM_MA_Cross_EURUSD_M15.mq5`
+- **Estrategia Python:** `strategies/ma_cross_m15.py`
+- **Parámetros v2:** EMA**8**/SMA**34**, SL=2×ATR, RR=**2.5**, Trail=0.5×ATR, BE=0.5×ATR
+
+| Metrica | IS 2014-2021 | OOS 2022-2025 |
+|---|---|---|
+| Profit Factor | 1.25 | **1.41** ⭐ |
+| Retorno anual | — | **24.36%** |
+| Drawdown max | — | **4.8%** ✅ |
+| Trades OOS | — | 1,622 (~34/mes) |
+| WF ratio | — | **1.128** ✅ |
+
+**LotRiskPct recomendado:** 0.4% → DD esperado ~3.8% (margen seguridad sobre 5%)
+**Apto FundedNext:** ✅ DD 4.8% < 5%
+**Apto The 5%ers:** ✅ DD 4.8% < 5%
+
+### Versión anterior v1.0 (DEPRECADA — rompe DD<5%)
+- EMA5/SMA21, RR=3.0: PF=1.36, DD=6.5%, $1,986/mes en $50k
+
+---
+
+## ✅ AGM_MA_Cross_GBPUSD_M15
+- **Fecha validacion:** 2026-05-16
+- **Familia:** MA Cross (Tendencia)
+- **Par:** GBPUSD | **Grafico MT5:** GBPUSD en M15
+- **EA:** `MQL5\Experts\AGM_MA_Cross_GBPUSD_M15.mq5`
+- **Estrategia Python:** `strategies/ma_cross_m15.py`
+
+| Metrica | IS 2014-2021 | OOS 2022-2025 |
+|---|---|---|
+| Profit Factor | 1.38 | 1.35 |
+| Retorno anual | 23.91% | 29.11% |
+| Drawdown max | 5.2% | 9.8% |
+| Win Rate | 54.2% | 53.8% |
+| Trades/mes | ~73 | ~42 |
+| **Ganancia/mes** | — | **$1,832** |
+| **Ganancia/año** | — | **$21,987** |
+| WF ratio | — | 0.978 ✅ |
+
+**Robustez:** 12/12 años positivos. Peor año: 2021 (PF=1.20, Ann=24.37%).
+**Checklist anti-overfitting:** 7/7 puntos superados.
+**Capital testado:** $50,000
+**Parametros:** EMA5/SMA34, SL=1×ATR, RR=3.0, Trail=0.5×ATR, BE=0.5×ATR
+
+---
+
+## EN PROCESO (no añadir hasta validar)
+| Estrategia | Par | Estado | Pendiente |
+|---|---|---|---|
+| Ranger C | AUDCAD | Opt OK, WF=0.919 | Robustez year-by-year |
+
+---
+*Actualizado: 2026-05-16*

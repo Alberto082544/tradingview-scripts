@@ -1,0 +1,53 @@
+==============================================================
+  BOT: AGM_Ranger_C_AUDCAD_M15
+==============================================================
+  Familia:        Ranger C (Mean Reversion)
+  Par:            AUDCAD
+  Grafico MT5:    AUDCAD — temporalidad M15  ← PONER AQUI EL EA
+  Filtro:         ADX H4 (regimen lateral)
+==============================================================
+  CAPITAL TESTEADO: $50,000
+  Periodo IS:  2014-2021 (8 años, entrenamiento)
+  Periodo OOS: 2022-2025 (4 años, validacion real)
+==============================================================
+  RESULTADOS OOS (los que importan):
+    PF:            1.13
+    Win Rate:      53.8%
+    Ann. return:   18.3%
+    Max Drawdown:  14.0%
+    Trades/año:    ~622
+    Trades/mes:    ~52
+    Ganancia/mes:  ~$994   (sobre $50,000)
+    Ganancia/año:  ~$11,922
+    PnL total OOS: ~$47,690 (4 años)
+
+  RESULTADO IS:
+    PF:            1.23  |  Ann: 22.80%  |  DD: 7.2%
+
+  WF Ratio: 0.919  ⚠️ (OOS algo peor que IS — leve overfitting)
+==============================================================
+  PARAMETROS OPTIMOS:
+    ADX H4 Max:      35      (ADX < 35 = mercado lateral)
+    RSI Long Max:    40      (RSI < 40 para entrar largo)
+    RSI Short Min:   60      (RSI > 60 para entrar corto)
+    RSI Confirm:     SI      (RSI debe estar girando)
+    BB Mid TP:       NO
+    SL ATR Mult:     1.5
+    Min SL Pips:     20
+    Trail Dist Pips: 12
+    Exit Bars:       24      (salida a las 6h si no hay SL/TP)
+    Riesgo/trade:    0.7%
+    Max Lotes:       4.0
+==============================================================
+  LOGICA:
+    H4: ADX < 35 (mercado en rango, no tendencia)
+    M15: precio toca banda BB inferior/superior
+         + RSI en zona extrema (< 40 / > 60) + RSI girando
+    Salida: trailing stop 12 pips o maximo 24 barras (6h)
+==============================================================
+  SESION: 00:00 - 23:00 UTC
+  NOTA: Pendiente robustez year-by-year antes de produccion
+==============================================================
+  ARCHIVO EA: AGM_Ranger_C_AUDCAD_M15.mq5  (pendiente crear)
+  Ruta MT5:   MQL5\Experts\AGM_Ranger_C_AUDCAD_M15.mq5
+==============================================================

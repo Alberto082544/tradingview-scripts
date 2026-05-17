@@ -1,0 +1,115 @@
+tarea_busqueda:
+  description: >
+    Realiza una búsqueda exhaustiva en internet sobre el tema del día: {tema_dia}.
+
+    Busca en estas categorías según relevancia para el tema:
+    1. Estrategias de trading algorítmico nuevas o mejoradas (mean reversion, momentum, pairs trading)
+    2. Herramientas y librerías Python para backtesting o análisis cuantitativo
+    3. Mejoras en optimización de parámetros (walk-forward, Monte Carlo, genético)
+    4. Técnicas de filtrado de mercado (ADX, regímenes de volatilidad, correlación)
+    5. Automatización de trading (MetaTrader 5, Pine Script, APIs de brokers)
+    6. Análisis de riesgo y gestión de capital
+
+    Para cada hallazgo, anota: título, fuente URL, resumen de 2-3 líneas, y por qué
+    podría ser relevante para nuestro sistema.
+
+    Busca al menos 5-8 fuentes distintas. Prioriza contenido técnico sobre contenido
+    de marketing o "get rich quick".
+  expected_output: >
+    Una lista de 5-8 hallazgos con formato:
+    **[Hallazgo N]** Título
+    Fuente: URL
+    Resumen: [2-3 líneas técnicas]
+    Relevancia: [por qué importa para nuestro sistema]
+  agent: buscador
+  output_file: output/busqueda_raw.md
+
+tarea_analisis:
+  description: >
+    Analiza en profundidad los hallazgos del buscador y debate su viabilidad para
+    nuestro sistema de trading.
+
+    Para cada hallazgo relevante, evalúa:
+    1. ¿Es compatible con nuestra infraestructura? (Python / MT5 / TradingView)
+    2. ¿Mejora algo que ya tenemos o es totalmente nuevo?
+    3. ¿Tiene evidencia de robustez? (walk-forward, OOS, múltiples mercados)
+    4. ¿Qué recursos requeriría implementarlo? (horas, datos, capital)
+    5. ¿Cuál es el riesgo de que sea overfitting o hype sin sustancia?
+
+    Debate los pros y contras de los 3 hallazgos más prometedores.
+    Da un veredicto: IMPLEMENTAR / INVESTIGAR MÁS / DESCARTAR
+  expected_output: >
+    Análisis de los top 3 hallazgos con estructura:
+    **[Hallazgo]** + Veredicto (IMPLEMENTAR / INVESTIGAR / DESCARTAR)
+    Pros: [lista]
+    Contras: [lista]
+    Esfuerzo estimado: [bajo/medio/alto]
+    Siguiente paso concreto: [acción específica]
+  agent: analista
+  context:
+    - tarea_busqueda
+  output_file: output/analisis.md
+
+tarea_riesgo:
+  description: >
+    Para cada hallazgo que el analista haya marcado como IMPLEMENTAR, calcula
+    el sizing recomendado usando Kelly fraccional con cap de 0.25.
+
+    Para cada uno proporciona:
+    1. % riesgo por trade recomendado (entre 0.25% y 1%)
+    2. Tamaño de posición esperado en cuenta de $50,000
+    3. Justificación basada en PF/WR/DD del hallazgo
+
+    Si el hallazgo no tiene métricas concretas (PF, WR, DD), márcalo como
+    "no sizable aún — requiere backtest propio" en lugar de inventar números.
+
+    Aplicar ajustes a la baja si:
+    - OOS PF < 1.3 → reducir riesgo a la mitad
+    - WF ratio < 0.85 → marcar como NO IMPLEMENTAR aún
+  expected_output: >
+    Tabla por hallazgo IMPLEMENTAR:
+    - Hallazgo: [nombre]
+    - Riesgo/trade: [%]
+    - Posición esperada $50k: [USD]
+    - Justificación: [1 línea]
+    - Cap aplicado: [Kelly_25 / reducido_PF_bajo / no_sizable]
+  agent: risk_manager
+  context:
+    - tarea_analisis
+  output_file: output/riesgo.md
+
+tarea_reporte:
+  description: >
+    Crea el informe diario de inteligencia de trading basándote en la búsqueda y el análisis.
+
+    El informe debe tener esta estructura exacta:
+
+    # Informe Diario Trading Research — {fecha_hoy}
+    ## Tema del día: {tema_dia}
+
+    ## Resumen Ejecutivo (3 líneas máximo)
+    [Lo más importante que el trader necesita saber hoy]
+
+    ## Top Hallazgos
+    [Top 3 con veredicto claro]
+
+    ## Hallazgos Secundarios
+    [Resto de hallazgos con 1 línea cada uno]
+
+    ## Acciones Recomendadas
+    [Lista priorizada de próximos pasos]
+
+    ## En Seguimiento
+    [Temas que vale la pena revisar en los próximos días]
+
+    Escribe en español. Sé conciso y directo. Sin fluff.
+  expected_output: >
+    Informe completo en markdown con todas las secciones, listo para leer en 5 minutos.
+    Guardado en output/informe_YYYY-MM-DD.md
+  agent: reporter
+  context:
+    - tarea_busqueda
+    - tarea_analisis
+    - tarea_riesgo
+  output_file: output/informe_{fecha_hoy}.md
+  markdown: true

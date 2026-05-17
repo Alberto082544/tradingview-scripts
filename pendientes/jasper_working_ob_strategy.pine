@@ -1,0 +1,220 @@
+//@version=6
+indicator("Jasper Working OB Strategy", overlay=true, max_boxes_count=500)
+
+//====================================================
+// SETTINGS
+//====================================================
+
+showBullOB = input.bool(true, "Show Bullish OBs")
+showBearOB = input.bool(true, "Show Bearish OBs")
+extendBoxes = input.int(30, "Extend Boxes", minval=5)
+
+//====================================================
+// ORIGINAL OB STRUCTURE (UNCHANGED)
+//====================================================
+
+bullDisplacement = close[1] > open[1]
+bullConfirm = close > open
+bullFVG = low > high[2]
+
+bearDisplacement = close[1] < open[1]
+bearConfirm = close < open
+bearFVG = high < low[2]
+
+// PRE-FILTER (UNCHANGED)
+preBullFVG = low[2] > high[3] or low[1] > high[3]
+preBearFVG = high[2] < low[3] or high[1] < low[3]
+
+// VALID OB
+validBullOB = bullDisplacement and bullConfirm and bullFVG and not preBullFVG
+validBearOB = bearDisplacement and bearConfirm and bearFVG and not preBearFVG
+
+var int bullOBCount = 0
+var int bearOBCount = 0
+
+var int bullTouchCount = 0
+var int bearTouchCount = 0
+
+var int bullEntryCount = 0
+var int bearEntryCount = 0
+
+if validBullOB
+    bullOBCount += 1
+
+if validBearOB
+    bearOBCount += 1
+
+//====================================================
+// ZONE STORAGE
+//====================================================
+
+var float bullZoneTop = float(na)
+var float bullZoneBot = float(na)
+var float bearZoneTop = float(na)
+var float bearZoneBot = float(na)
+
+var bool bullActive = false
+var bool bearActive = false
+
+if validBullOB
+    bullZoneTop := high[2]
+    bullZoneBot := low[2]
+    bullActive := true
+
+if validBearOB
+    bearZoneTop := high[2]
+    bearZoneBot := low[2]
+    bearActive := true
+
+//====================================================
+// CONDITION 1 — ZONE TOUCH (FIXED: NO CONSUMPTION LOGIC)
+//====================================================
+
+bullTouched = bullActive and low <= bullZoneTop and high >= bullZoneBot
+bearTouched = bearActive and high >= bearZoneBot and low <= bearZoneTop
+
+if bullTouched
+    bullTouchCount += 1
+
+if bearTouched
+    bearTouchCount += 1
+
+//====================================================
+// 🔥 NEW CORE FIX: PERSISTENT TOUCH MEMORY
+//====================================================
+
+var bool bullTouchedMemory = false
+var bool bearTouchedMemory = false
+
+if bullTouched
+    bullTouchedMemory := true
+
+if bearTouched
+    bearTouchedMemory := true
+
+//====================================================
+// 🔥 ENTRY MEMORY (ADDED ON TOP OF V17)
+//====================================================
+
+// store first interaction only (DO NOT modify OB logic)
+if bullActive and low <= bullZoneTop and high >= bullZoneBot
+    bullTouchedMemory := true
+
+if bearActive and low <= bearZoneTop and high >= bearZoneBot
+    bearTouchedMemory := true
+
+//====================================================
+// CONDITION 2 — ZONE VALIDITY (NO FULL BREAK)
+//====================================================
+
+bullValid = bullTouchedMemory and close > bullZoneBot
+bearValid = bearTouchedMemory and close < bearZoneTop
+
+//====================================================
+// CONDITION 3 — REVERSAL CONFIRMATION (FIXED TIMING MODEL)
+//====================================================
+
+// reversal does NOT need to happen same candle as touch
+bullReversal = bullTouchedMemory and bullValid and close > high[1]
+bearReversal = bearTouchedMemory and bearValid and close < low[1]
+
+//====================================================
+// ARM STATE (SIMPLIFIED — NO BROKEN REARM SYSTEM)
+//====================================================
+
+bullArmed = bullTouchedMemory and bullValid
+bearArmed = bearTouchedMemory and bearValid
+
+//====================================================
+// 🔥 ENTRY TRIGGER (EVENT BASED)
+//====================================================
+
+bullTrigger = bullArmed and bullReversal
+bearTrigger = bearArmed and bearReversal
+
+//====================================================
+// 🔥 LATCH SIGNAL (ONE SHOT, NEVER DISAPPEARS)
+//====================================================
+
+var bool buyLocked = false
+var bool sellLocked = false
+
+var int buyBar = na
+var int sellBar = na
+
+if bullTrigger and not buyLocked
+    buyLocked := true
+    buyBar := bar_index
+
+if bearTrigger and not sellLocked
+    sellLocked := true
+    sellBar := bar_index
+
+buySignal = buyLocked and bar_index == buyBar
+sellSignal = sellLocked and bar_index == sellBar
+
+//====================================================
+// 🔥 ZONE INVALIDATION (DO NOT REARM)
+//====================================================
+
+bullInvalid = close < bullZoneBot
+bearInvalid = close > bearZoneTop
+
+if bullInvalid
+    bullTouchedMemory := false
+    bullActive := false
+
+if bearInvalid
+    bearTouchedMemory := false
+    bearActive := false
+
+//====================================================
+// DRAW ZONES
+//====================================================
+
+if validBullOB and showBullOB
+    box.new(bar_index - 2, high[2], bar_index + extendBoxes, low[2],
+        bgcolor=color.new(color.green, 85),
+        border_color=color.green)
+
+if validBearOB and showBearOB
+    box.new(bar_index - 2, high[2], bar_index + extendBoxes, low[2],
+        bgcolor=color.new(color.red, 85),
+        border_color=color.red)
+
+//====================================================
+// 🔥 FIX: SHIFT SIGNAL BACK TO ENTRY CANDLE
+//====================================================
+
+// store entry bar
+var int bullSignalBar = na
+var int bearSignalBar = na
+
+//====================================================
+// 🔥 EDGE DETECTION (ONLY FIRST OCCURRENCE)
+//====================================================
+
+bullEntryRaw = bullTouchedMemory and high > high[1]
+bearEntryRaw = bearTouchedMemory and low < low[1]
+
+// detect ONLY first activation
+bullEntry = bullEntryRaw and not bullEntryRaw[1]
+bearEntry = bearEntryRaw and not bearEntryRaw[1]
+
+if bullEntry
+    bullEntryCount += 1
+
+if bearEntry
+    bearEntryCount += 1
+
+plotshape(bullEntry, title="BUY",
+     location=location.belowbar,
+     color=color.green,
+     style=shape.labelup,
+     text="BUY")
+
+plotshape(bearEntry, title="SELL",
+     location=location.abovebar,
+     color=color.red,
+     style=shape.labeldown,
+     text="SELL")

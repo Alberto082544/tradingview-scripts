@@ -1,0 +1,61 @@
+# Secrets (NUNCA subir)
+.env
+.env.*
+!.env.example
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+
+# Reportes generados (locales)
+reports/
+python/reports/
+
+# Datos historicos (pesados, ~111MB, regenerables desde Dukascopy/histdata)
+python/data/
+data/*.csv
+data/*.parquet
+
+# Logs
+*.log
+flask_*.log
+bot_startup.log
+indices_download.log
+compile_log.txt
+batch_log.txt
+
+# CrewAI output (informes generados)
+trading_researcher/output/
+trading_researcher/.venv/
+trading_researcher/uv.lock
+
+# Repos externos clonados (Dukascopy-DL es proyecto ajeno)
+Dukascopy-DL/
+
+# MT5 files
+*.ex5
+mt5_err.txt
+mt5_out.txt
+cpt_syms.txt
+cpt_test.txt
+
+# Backups locales
+*.zip
+*.bak
+
+# Ejecutables compilados (PyInstaller, demasiado grandes para GitHub)
+*.exe
+distribucion/
+*/distribucion/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

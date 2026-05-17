@@ -1,0 +1,62 @@
+==============================================================
+  BOT: AGM_MA_Cross_GBPUSD_M15
+==============================================================
+  Familia:        MA Cross (Tendencia)
+  Par:            GBPUSD
+  Grafico MT5:    GBPUSD — temporalidad M15  <- PONER AQUI EL EA
+  Filtro:         EMA5 > SMA34 en H4 (tendencia alcista/bajista)
+==============================================================
+  CAPITAL TESTEADO: $50,000
+  Periodo IS:  2014-2021 (8 años, entrenamiento)
+  Periodo OOS: 2022-2025 (4 años, validacion real)
+==============================================================
+  RESULTADOS OOS (los que importan):
+    PF:            1.35
+    Win Rate:      53.8%
+    Ann. return:   29.11%
+    Max Drawdown:  9.8%
+    Trades/año:    ~509
+    Trades/mes:    ~42
+    Ganancia/mes:  ~$1,832  (sobre $50,000)
+    Ganancia/año:  ~$21,987
+    PnL total OOS: ~$87,947 (4 años)
+
+  RESULTADO IS:
+    PF:            1.38  |  Ann: 23.91%  |  DD: 5.2%
+
+  WF Ratio: 0.978 ✅
+
+  RESULTADO FULL 2014-2025:
+    Ganancia total: $319,005
+    Ganancia/año:   $26,584
+    Ganancia/mes:   $2,215
+==============================================================
+  ROBUSTEZ:
+    12/12 años positivos ⭐
+    Peor año: 2021 PF=1.20 Ann=24.37%
+    Mejor año: 2016 PF=1.59 Ann=77.27%
+==============================================================
+  CHECKLIST ANTI-OVERFITTING: 7/7 ✅
+==============================================================
+  PARAMETROS OPTIMOS:
+    EMA rapida:      5
+    SMA lenta:       34
+    Filtro H4:       EMA5 > SMA34
+    SL:              1.0 * ATR
+    TP:              3.0 * SL  (RR=3)
+    Break-Even:      0.5 * ATR de ganancia
+    Trailing inicio: 1.5 * ATR de ganancia
+    Trailing dist:   0.5 * ATR
+    Riesgo/trade:    0.5%
+    Max Lotes:       4.0
+==============================================================
+  LOGICA:
+    H4: EMA5 > SMA34 → solo longs
+        EMA5 < SMA34 → solo shorts
+    M15: EMA5 cruza SMA34 en la direccion del H4
+    Gestion: BE a 0.5ATR, trailing a partir de 1.5ATR
+    El 90% de las salidas son por SL, 10% por TP
+==============================================================
+  ARCHIVO EA: AGM_MA_Cross_GBPUSD_M15.mq5
+  Ruta MT5:   MQL5\Experts\AGM_MA_Cross_GBPUSD_M15.mq5
+==============================================================
