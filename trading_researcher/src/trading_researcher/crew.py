@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task, before_kickoff
@@ -7,6 +8,14 @@ from crewai.tools import tool
 from youtube_transcript_api import YouTubeTranscriptApi
 from trading_researcher.tools.local_tools import read_registro, list_reports, read_report
 import re
+
+
+def _local_st_embedder():
+    """Embedder local con sentence-transformers (sin API externa)."""
+    from chromadb.utils import embedding_functions
+    return embedding_functions.SentenceTransformerEmbeddingFunction(
+        model_name="all-MiniLM-L6-v2"
+    )
 
 
 @tool("DuckDuckGo Search")
@@ -107,4 +116,9 @@ class TradingResearcher:
             tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
+            # Memoria persistente DESACTIVADA: HuggingFace Inference API
+            # devuelve HTML/non-JSON con tokens free. Necesita modelo dedicado
+            # o cambiar a otro provider (Ollama local, OpenAI). Pendiente arreglar.
+            # memory=True,
+            # embedder={"provider": "huggingface", "config": {...}},
         )

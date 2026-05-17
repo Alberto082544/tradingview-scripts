@@ -105,9 +105,9 @@ def add_indicators(df: pd.DataFrame, params: dict = None) -> pd.DataFrame:
 
 def run_backtest(df: pd.DataFrame, params: dict = None,
                  initial_capital: float = 50_000,
-                 cadusd: float = NZDUSD) -> pd.DataFrame:
+                 nzdusd: float = NZDUSD) -> pd.DataFrame:
     p       = DEFAULT_PARAMS if params is None else params
-    pip_val = PIP * 100_000 * cadusd
+    pip_val = PIP * 100_000 * nzdusd
     warmup  = p['BB_Period'] * 8 + p['ATR_Period'] + 2
 
     o        = df['open'].values

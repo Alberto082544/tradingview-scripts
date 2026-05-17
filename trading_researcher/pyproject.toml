@@ -13,6 +13,7 @@ dependencies = [
     "duckduckgo-search>=7.0.0",
     "ddgs>=9.14.4",
     "youtube-transcript-api>=1.2.4",
+    "sentence-transformers>=5.5.0",
 ]
 
 [project.scripts]

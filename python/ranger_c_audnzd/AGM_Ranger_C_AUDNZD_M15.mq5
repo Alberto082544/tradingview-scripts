@@ -7,10 +7,10 @@
 //|   IS 2014-2021:  PF=1.21 DD=12.3%                               |
 //|   OOS 2022-2025: PF=1.54 Ann=25.4% DD=4.6% WR=63.7% N=1123      |
 //|   WF ratio:      1.273  | Apto FundedNext + The 5%ers           |
-//| Version: 3.2 | 2026-05-17 | + BadHour=8 (Asia->London bad)      |
+//| Version: 3.3 | 2026-05-17 | + Circuit breakers (DD+SL streak)   |
 //+------------------------------------------------------------------+
 #property copyright "AGM — Ranger C AUDNZD v3.1"
-#property version   "3.20"
+#property version   "3.30"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -53,6 +53,12 @@ input group "=== FILTRO NOTICIAS (5%ers High Stakes) ==="
 input bool   UseNewsFilter   = true;   // Activar filtro noticias alto impacto
 input int    NewsWindowMin   = 2;      // Bloquear N min antes y despues de noticia
 
+input group "=== CIRCUIT BREAKERS (proteccion fondeo) ==="
+input bool   UseCircuitBreakers = true; // Activar bloqueos de seguridad
+input double DailyDDPause     = 3.0;   // % perdida diaria que pausa hasta el siguiente dia
+input int    ConsecutiveSLs   = 3;     // Numero de SL consecutivos para reducir lote
+input double LotReductionPct  = 0.5;   // Multiplicador del lote tras N SL (0.5 = mitad)
+
 //--- Globals
 CTrade   Trade;
 int      hBB, hStoch, hATR, hADX_H4;
@@ -61,6 +67,11 @@ datetime LastBar      = 0;
 datetime LastTradeDay = 0;
 datetime EntryTime    = 0;
 int      TradesToday  = 0;
+
+// Circuit breakers (estado por dia)
+double   DayStartBalance = 0;      // balance al inicio del dia
+int      ConsecSLsToday  = 0;      // contador SL consecutivos
+bool     DayBlocked      = false;  // dia bloqueado por DD diario
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -91,6 +102,56 @@ void OnDeinit(const int reason)
     IndicatorRelease(hStoch);
     IndicatorRelease(hATR);
     IndicatorRelease(hADX_H4);
+}
+
+//+------------------------------------------------------------------+
+//| Circuit breakers: TRUE si esta operativa permitida                |
+//| Bloquea si DD diario > limite o si demasiados SL seguidos        |
+//+------------------------------------------------------------------+
+bool IsTradingAllowed()
+{
+    if(!UseCircuitBreakers) return true;
+    if(DayBlocked) return false;
+
+    double eq = AccountInfoDouble(ACCOUNT_EQUITY);
+    if(DayStartBalance > 0)
+    {
+        double daily_dd_pct = 100.0 * (DayStartBalance - eq) / DayStartBalance;
+        if(daily_dd_pct >= DailyDDPause)
+        {
+            DayBlocked = true;
+            PrintFormat("CIRCUIT BREAKER: DD diario %.2f%% >= %.2f%%, pausando hasta proximo dia",
+                        daily_dd_pct, DailyDDPause);
+            return false;
+        }
+    }
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| Trade transaction handler: cuenta SL consecutivos                |
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
+{
+    if(!UseCircuitBreakers) return;
+    if(trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
+
+    HistoryDealSelect(trans.deal);
+    if(HistoryDealGetInteger(trans.deal, DEAL_MAGIC) != (long)MagicNumber) return;
+    if(HistoryDealGetInteger(trans.deal, DEAL_ENTRY) != DEAL_ENTRY_OUT) return;
+
+    double profit = HistoryDealGetDouble(trans.deal, DEAL_PROFIT);
+    if(profit < 0)
+    {
+        ConsecSLsToday++;
+        PrintFormat("Circuit breaker: SL consecutivo %d/%d", ConsecSLsToday, ConsecutiveSLs);
+    }
+    else if(profit > 0)
+    {
+        ConsecSLsToday = 0;  // reset al primer winner
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -157,9 +218,16 @@ void OnTick()
     MqlDateTime tm;
     TimeToStruct(dt, tm);
 
-    // Reset contador diario
+    // Reset contador diario + circuit breakers
     datetime hoy = (datetime)((long)dt - (long)dt % 86400);
-    if(hoy != LastTradeDay) { TradesToday = 0; LastTradeDay = hoy; }
+    if(hoy != LastTradeDay)
+    {
+        TradesToday      = 0;
+        LastTradeDay     = hoy;
+        DayStartBalance  = AccountInfoDouble(ACCOUNT_BALANCE);
+        ConsecSLsToday   = 0;
+        DayBlocked       = false;
+    }
 
     // Leer indicadores (shift 1 = barra cerrada anterior)
     double bb_upper[3], bb_lower[3], bb_mid[3];
@@ -242,6 +310,8 @@ void OnTick()
     if(TradesToday >= MaxTradesDay)              return;
     if(adx1 >= ADX_H4_Max)                      return;  // tendencia fuerte
     if(IsNewsWindow())                          return;  // bloqueo noticias alto impacto
+    if(!IsTradingAllowed())                     return;  // circuit breaker DD diario
+    if(UseCircuitBreakers && ConsecSLsToday >= ConsecutiveSLs) return;  // SL consecutivos
 
     // Stochastic solo: K en zona extrema + K cruzando D al alza/baja (giro)
     bool stoch_ok_long  = (sk1 < Stoch_Long_Max  && sk1 > sd1);

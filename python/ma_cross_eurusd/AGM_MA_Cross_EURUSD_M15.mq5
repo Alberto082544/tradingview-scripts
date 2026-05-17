@@ -7,10 +7,10 @@
 //|   IS  PF=1.25 DD=??                                              |
 //|   OOS PF=1.41 Ann=24.4% DD=4.8% N=1622                          |
 //|   WF=1.128 | Apto FundedNext + The 5%ers                       |
-//| Version: 2.2 | 2026-05-17 | + BadHour=15 (USA open hostile)     |
+//| Version: 2.3 | 2026-05-17 | + Circuit breakers (DD+SL streak)   |
 //+------------------------------------------------------------------+
 #property copyright "AGM — MA Cross EURUSD v2.1"
-#property version   "2.20"
+#property version   "2.30"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -67,9 +67,20 @@ input int    NewsWindowMin   = 2;      // Bloquear N min antes y despues
 input group "=== FILTRO HORARIO ==="
 input int    BadHour         = 15;     // Hora UTC bloqueada (v2.2: hora 15 = sangra USA open)
 
+input group "=== CIRCUIT BREAKERS (proteccion fondeo) ==="
+input bool   UseCircuitBreakers = true; // Activar bloqueos de seguridad
+input double DailyDDPause     = 3.0;   // % perdida diaria que pausa hasta el siguiente dia
+input int    ConsecutiveSLs   = 3;     // Numero de SL consecutivos para bloquear el dia
+
 //--- Handles
 int h_ema, h_sma, h_dir_ema, h_dir_sma, h_atr;
 datetime LastBar = 0;
+
+// Circuit breakers (estado por dia)
+datetime LastTradeDay    = 0;
+double   DayStartBalance = 0;
+int      ConsecSLsToday  = 0;
+bool     DayBlocked      = false;
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -99,6 +110,52 @@ void OnDeinit(const int reason)
     IndicatorRelease(h_ema); IndicatorRelease(h_sma);
     IndicatorRelease(h_dir_ema); IndicatorRelease(h_dir_sma);
     IndicatorRelease(h_atr);
+}
+
+//+------------------------------------------------------------------+
+//| Circuit breakers: TRUE si esta operativa permitida                |
+//+------------------------------------------------------------------+
+bool IsTradingAllowed()
+{
+    if(!UseCircuitBreakers) return true;
+    if(DayBlocked) return false;
+    double eq = AccountInfoDouble(ACCOUNT_EQUITY);
+    if(DayStartBalance > 0)
+    {
+        double daily_dd_pct = 100.0 * (DayStartBalance - eq) / DayStartBalance;
+        if(daily_dd_pct >= DailyDDPause)
+        {
+            DayBlocked = true;
+            PrintFormat("CIRCUIT BREAKER: DD diario %.2f%% >= %.2f%%, pausando hasta proximo dia",
+                        daily_dd_pct, DailyDDPause);
+            return false;
+        }
+    }
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| Trade transaction handler: cuenta SL consecutivos                |
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
+{
+    if(!UseCircuitBreakers) return;
+    if(trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
+    HistoryDealSelect(trans.deal);
+    if(HistoryDealGetInteger(trans.deal, DEAL_MAGIC) != (long)MagicNumber) return;
+    if(HistoryDealGetInteger(trans.deal, DEAL_ENTRY) != DEAL_ENTRY_OUT) return;
+    double profit = HistoryDealGetDouble(trans.deal, DEAL_PROFIT);
+    if(profit < 0)
+    {
+        ConsecSLsToday++;
+        PrintFormat("Circuit breaker: SL consecutivo %d/%d", ConsecSLsToday, ConsecutiveSLs);
+    }
+    else if(profit > 0)
+    {
+        ConsecSLsToday = 0;
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -197,8 +254,23 @@ void OnTick()
     if(curBar == LastBar) return;
     LastBar = curBar;
 
+    // Reset diario circuit breakers
+    datetime dt = TimeCurrent();
+    datetime hoy = (datetime)((long)dt - (long)dt % 86400);
+    if(hoy != LastTradeDay)
+    {
+        LastTradeDay     = hoy;
+        DayStartBalance  = AccountInfoDouble(ACCOUNT_BALANCE);
+        ConsecSLsToday   = 0;
+        DayBlocked       = false;
+    }
+
     ulong ticket;
     if(HasPosition(ticket)) return;
+
+    // Circuit breakers
+    if(!IsTradingAllowed()) return;
+    if(UseCircuitBreakers && ConsecSLsToday >= ConsecutiveSLs) return;
 
     // Spread filter
     if(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) > MaxSpreadPts) return;
