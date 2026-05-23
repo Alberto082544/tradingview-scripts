@@ -25,19 +25,19 @@ input ulong  MagicNumber     = 202611;
 input string Comment_        = "AGM_GBPUSD_MC";
 
 input group "=== MEDIAS (entrada M15) ==="
-input int    EMA_Fast        = 5;          // EMA rapida
-input int    SMA_Slow        = 34;         // SMA lenta
+input int    EMA_Fast        = 3;          // EMA rapida (v1.1: optimizado 23-may VectorBT, antes 5)
+input int    SMA_Slow        = 55;         // SMA lenta (v1.1: optimizado 23-may, antes 34)
 input ENUM_APPLIED_PRICE EntryPrice = PRICE_CLOSE;
 
 input group "=== FILTRO DIRECCION H4 ==="
 input bool             UseDirFilter = true;
 input ENUM_TIMEFRAMES  DirTF        = PERIOD_H4;
-input int              Dir_EMA      = 5;   // Igual que EMA_Fast
-input int              Dir_SMA      = 34;  // Igual que SMA_Slow
+input int              Dir_EMA      = 3;   // Igual que EMA_Fast (v1.1)
+input int              Dir_SMA      = 55;  // Igual que SMA_Slow (v1.1)
 
 input group "=== GESTION SL/TP ==="
 input int    ATR_Period      = 14;
-input double SL_ATR_Mult     = 1.0;        // SL = 1 * ATR
+input double SL_ATR_Mult     = 0.5;        // SL = 0.5 * ATR (v1.1: optimizado 23-may, antes 1.0)
 input double RR              = 3.0;        // TP = 3 * SL
 
 input group "=== BREAK-EVEN ==="
@@ -53,6 +53,9 @@ input double Trail_Dist_ATR  = 0.5;
 input group "=== RIESGO ==="
 input double LotRiskPct      = 0.5;
 input double MaxLots         = 4.0;
+
+input group "=== FILTRO VOLATILIDAD (parche 2026-05-22) ==="
+input double MaxATR_Pips     = 35.0;   // 0 = off. >0: no entrar si ATR > umbral pips. Evita SL anormales
 
 input group "=== EJECUCION ==="
 input int    MaxSpreadPts    = 30;
@@ -184,6 +187,9 @@ void OnTick()
 
     double atr[1];
     if(CopyBuffer(h_atr, 0, 1, 1, atr) <= 0) return;
+    // Filtro volatilidad: no entrar si ATR > MaxATR_Pips
+    double atrPips = atr[0] / (_Point * 10);
+    if(MaxATR_Pips > 0 && atrPips > MaxATR_Pips) return;
     double slDist = atr[0] * SL_ATR_Mult;
     double tpDist = slDist * RR;
 
