@@ -25,19 +25,19 @@ input ulong  MagicNumber     = 202611;
 input string Comment_        = "AGM_GBPUSD_MC";
 
 input group "=== MEDIAS (entrada M15) ==="
-input int    EMA_Fast        = 3;          // EMA rapida (v1.1: optimizado 23-may VectorBT, antes 5)
-input int    SMA_Slow        = 55;         // SMA lenta (v1.1: optimizado 23-may, antes 34)
+input int    EMA_Fast        = 5;          // EMA rapida (REVERTIDO 23-may tarde: EMA=3 dio -99% DD en MT5)
+input int    SMA_Slow        = 34;         // SMA lenta (REVERTIDO 23-may tarde)
 input ENUM_APPLIED_PRICE EntryPrice = PRICE_CLOSE;
 
 input group "=== FILTRO DIRECCION H4 ==="
 input bool             UseDirFilter = true;
 input ENUM_TIMEFRAMES  DirTF        = PERIOD_H4;
-input int              Dir_EMA      = 3;   // Igual que EMA_Fast (v1.1)
-input int              Dir_SMA      = 55;  // Igual que SMA_Slow (v1.1)
+input int              Dir_EMA      = 5;   // Igual que EMA_Fast (REVERTIDO)
+input int              Dir_SMA      = 34;  // Igual que SMA_Slow (REVERTIDO)
 
 input group "=== GESTION SL/TP ==="
 input int    ATR_Period      = 14;
-input double SL_ATR_Mult     = 0.5;        // SL = 0.5 * ATR (v1.1: optimizado 23-may, antes 1.0)
+input double SL_ATR_Mult     = 1.0;        // SL = 1 * ATR (REVERTIDO 23-may tarde: SL=0.5 dio -99% DD)
 input double RR              = 3.0;        // TP = 3 * SL
 
 input group "=== BREAK-EVEN ==="

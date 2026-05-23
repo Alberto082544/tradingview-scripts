@@ -39,8 +39,8 @@ input int              Dir_SMA      = 34;  // Igual que SMA_Slow
 
 input group "=== GESTION SL/TP ==="
 input int    ATR_Period      = 14;
-input double SL_ATR_Mult     = 0.5;        // SL = 0.5 * ATR (v2.4: optimizado 23-may VectorBT, antes 2.0)
-input double RR              = 3.0;        // TP = 3.0 * SL (v2.4: optimizado 23-may, antes 2.5)
+input double SL_ATR_Mult     = 2.0;        // SL = 2 * ATR (REVERTIDO 23-may tarde: SL=0.5 dio -99% DD en MT5, vuelta a v2.3)
+input double RR              = 2.5;        // TP = 2.5 * SL (REVERTIDO 23-may tarde, vuelta a v2.3)
 
 input group "=== BREAK-EVEN ==="
 input bool   UseBE           = true;
