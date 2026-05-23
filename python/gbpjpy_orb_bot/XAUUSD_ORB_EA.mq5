@@ -18,9 +18,11 @@ input int    NY_Start_M    = 30;     // Minuto apertura NY
 input int    NY_End_H      = 20;     // Hora fin sesion NY
 input int    GMT_Offset    = 0;      // Ajuste GMT del broker (0 si broker usa GMT)
 
-input group "=== RANGO ORB (pips XAU = $0.10) ==="
-input int    MinRangePips  = 40;     // Rango minimo (40 pips = $4)
-input int    MaxRangePips  = 150;    // Rango maximo (150 pips = $15)
+input group "=== RANGO ORB (% del precio, robusto a evolucion XAU) ==="
+input double MinRangePct   = 0.15;   // Rango minimo en % del precio (0.15 = 0.15%)
+input double MaxRangePct   = 0.55;   // Rango maximo en % del precio (0.55 = 0.55%)
+// Calibracion 2026-05-19 desde Dukascopy 2010-2026.
+// Antes era [40,150] pips fijos = obsoleto cuando XAU sube mucho.
 
 input group "=== TP / SL ==="
 input double TP1_Mult      = 0.5;   // TP1 = rango x 0.5 (recoge rapido, sube WR)
@@ -63,7 +65,7 @@ int OnInit()
     trade.SetDeviationInPoints(15);
 
     Print("XAUUSD ORB EA iniciado. Pip size=", pip,
-          " MinRng=", MinRangePips, "p  MaxRng=", MaxRangePips, "p",
+          " MinRng=", DoubleToString(MinRangePct, 3), "%  MaxRng=", DoubleToString(MaxRangePct, 3), "%",
           " TP1=", TP1_Mult, "x  TP2=", TP2_Mult, "x");
     return INIT_SUCCEEDED;
 }
@@ -151,8 +153,7 @@ void OnTick()
     lastBarTime = currentBar;
 
     // Resetear estado diario
-    MqlDateTime dt; TimeToStruct(TimeCurrent(), dt);
-    datetime today = (datetime)(dt.year*10000 + dt.mon*100 + dt.mday);
+    datetime today = iTime(_Symbol, PERIOD_D1, 0);
     if(today != lastDay)
     {
         tradesToday = 0;
@@ -171,21 +172,23 @@ void OnTick()
     {
         double h   = iHigh(_Symbol, PERIOD_M15, 1);
         double l   = iLow(_Symbol,  PERIOD_M15, 1);
+        double c   = iClose(_Symbol, PERIOD_M15, 1);
         double rng = h - l;
+        double rng_pct = (c > 0) ? 100.0 * rng / c : 0.0;
 
-        if(rng >= MinRangePips * pip && rng <= MaxRangePips * pip)
+        if(rng_pct >= MinRangePct && rng_pct <= MaxRangePct)
         {
             orbHigh    = h;
             orbLow     = l;
             orbDefined = true;
             orbTraded  = false;
             Print("ORB NY definido: High=", orbHigh, " Low=", orbLow,
-                  " Rango=", DoubleToString(rng/pip, 1), " pips");
+                  " Rango=", DoubleToString(rng_pct, 3), "% (", DoubleToString(rng/pip, 1), " pips)");
         }
         else
         {
-            Print("ORB NY ignorado: rango=", DoubleToString(rng/pip,1),
-                  "p fuera de [", MinRangePips, ",", MaxRangePips, "]");
+            Print("ORB NY ignorado: rango=", DoubleToString(rng_pct, 3),
+                  "% fuera de [", DoubleToString(MinRangePct, 3), ",", DoubleToString(MaxRangePct, 3), "]");
         }
         return;
     }

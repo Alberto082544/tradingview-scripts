@@ -30,6 +30,7 @@ DEFAULT_PARAMS = {
     'MaxSpreadPips':  3.0,
     'LotRiskPct':    0.5,
     'MaxLots':       4.0,
+    'MaxATR_Pips':   0,     # 0 = off. >0: no entrar si ATR > umbral pips (filtro volatilidad)
 }
 
 PAIR_CONFIG = {
@@ -103,6 +104,7 @@ def run_backtest(df: pd.DataFrame, params: dict = None,
     tr_dist    = p['Trail_Dist']
     lot_risk   = p['LotRiskPct'] / 100
     max_lots   = p['MaxLots']
+    max_atr_pips = p.get('MaxATR_Pips', 0)
 
     equity = initial_capital
     pos    = None
@@ -158,6 +160,7 @@ def run_backtest(df: pd.DataFrame, params: dict = None,
 
         atr1     = atr_arr[i-1]
         if np.isnan(atr1) or atr1 <= 0: continue
+        if max_atr_pips > 0 and atr1 / pip > max_atr_pips: continue
 
         # Cruce M15 (barra i-1 vs i-2)
         ema_prev = ema_fast[i-2]; ema_curr = ema_fast[i-1]

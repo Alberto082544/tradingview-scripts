@@ -1,17 +1,16 @@
 """
-Ranger C AUDCAD — Optimizacion: Mean Reversion H4+M15
-Familia: Ranger C | Par: AUDCAD
+Ranger C AUDNZD Stoch — Optimizacion: Mean Reversion H4+M15 con Estocastico
+Familia: Ranger C | Par: AUDNZD | Variante: con Estocastico
 IS: 2014-2021 | OOS: 2022-2025
-Uso: python -m backtest.run_ranger_c_audcad_opt
+Uso: python -m backtest.run_ranger_c_audnzd_stoch_opt
 """
 import os, sys, itertools, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import pandas as pd
 import multiprocessing as mp
-from strategies.ranger_c_audcad_m15 import add_indicators, run_backtest, compute_metrics
-from utils.gt_score import gt_score
+from strategies.ranger_c_audnzd_stoch import add_indicators, run_backtest, compute_metrics
 
-CACHE     = os.path.join(os.path.dirname(__file__), "..", "data", "AUDCAD_M15_histdata.csv")
+CACHE     = os.path.join(os.path.dirname(__file__), "..", "data", "AUDNZD_M15_histdata.csv")
 CAP       = 50_000.0
 IS_END    = "2021-12-31"
 OOS_START = "2022-01-01"
@@ -60,26 +59,18 @@ def _worker(combo):
     if m_is['n'] < 50 or m_is['pf'] <= 0:
         return None
     exits = t_is['exit_type'].value_counts(normalize=True).to_dict() if len(t_is) > 0 else {}
-    # GT-Score sobre IS+OOS combinados (todo el periodo) — solo informativo, no se usa para ranking
-    try:
-        all_pnls = pd.concat([t_is['pnl'], t_oos['pnl']]).astype(float).values
-        all_ts = pd.concat([t_is['exit_dt'], t_oos['exit_dt']]).values
-        gt = round(gt_score(all_pnls, all_ts, CAP), 4)
-    except Exception:
-        gt = 0.0
     return {**combo,
             'is_n':m_is['n'],'is_pf':m_is['pf'],'is_wr':m_is['wr'],
             'is_dd':m_is['dd_pct'],'is_ann':m_is['ann_pct'],'is_pnl':m_is['pnl'],
             'oos_n':m_oos['n'],'oos_pf':m_oos['pf'],'oos_wr':m_oos['wr'],
             'oos_dd':m_oos['dd_pct'],'oos_ann':m_oos['ann_pct'],'oos_pnl':m_oos['pnl'],
             'time_pct':round(exits.get('TIME',0)*100,1),
-            'wf_ratio':round(m_oos['pf']/m_is['pf'],3) if m_is['pf']>0 else 0,
-            'gt_score':gt}
+            'wf_ratio':round(m_oos['pf']/m_is['pf'],3) if m_is['pf']>0 else 0}
 
 def main():
     print("="*58)
-    print("  Ranger C AUDCAD — Mean Reversion H4+M15")
-    print("  Familia: Ranger C | Par: AUDCAD")
+    print("  Ranger C AUDNZD Stoch — Mean Reversion H4+M15")
+    print("  Familia: Ranger C | Par: AUDNZD | Variante: Stoch")
     print("  IS: 2014-2021 | OOS: 2022-2025")
     print("="*58)
     df_raw = pd.read_csv(CACHE, index_col=0, parse_dates=True)
@@ -94,7 +85,8 @@ def main():
     t0_bm = time.time()
     run_backtest(df_is, {**FIXED_IND, **FIXED_BT,
         'ADX_H4_Max':25,'RSI_Long_Max':45,'RSI_Short_Min':55,
-        'RSI_Confirm':1,'BB_Mid_TP':0,'MinSLPips':12,'TrailDistPips':10,'ExitBars':16}, CAP)
+        'RSI_Confirm':1,'StochMode':2,'Stoch_Long_Max':20,'Stoch_Short_Min':75,
+        'BB_Mid_TP':0,'MinSLPips':12,'TrailDistPips':10,'ExitBars':16}, CAP)
     bm = time.time() - t0_bm
 
     keys   = list(GRID.keys())
@@ -115,7 +107,7 @@ def main():
     df_res = pd.DataFrame(results)
     df_res['score'] = df_res['is_pf']*0.4 + df_res['oos_pf']*0.6 - df_res['is_dd']*0.02
     df_res = df_res.sort_values('score', ascending=False)
-    out = os.path.join(os.path.dirname(__file__), "..", "reports", "Ranger_C_AUDCAD_Opt_Results.csv")
+    out = os.path.join(os.path.dirname(__file__), "..", "reports", "Ranger_C_AUDNZD_Stoch_Opt_Results.csv")
     df_res.to_csv(out, index=False)
 
     df_ok = df_res[(df_res['is_pf'] > 1.0) & (df_res['oos_pf'] > 1.0)].head(15)
@@ -127,7 +119,7 @@ def main():
     if len(df_ok):
         print(df_ok[cols].to_string(index=False))
         b = df_ok.iloc[0]
-        print(f"\n  MEJOR: ADX<{b['ADX_H4_Max']} RSI_L<{b['RSI_Long_Max']} RSI_S>{b['RSI_Short_Min']} BB_Mid={b['BB_Mid_TP']} MinSL={b['MinSLPips']} Trail={b['TrailDistPips']} Exit={b['ExitBars']}")
+        print(f"\n  MEJOR: ADX<{b['ADX_H4_Max']} RSI_L<{b['RSI_Long_Max']} RSI_S>{b['RSI_Short_Min']} StochMode={b['StochMode']} StochL<{b['Stoch_Long_Max']} StochS>{b['Stoch_Short_Min']} BB_Mid={b['BB_Mid_TP']} MinSL={b['MinSLPips']} Trail={b['TrailDistPips']} Exit={b['ExitBars']}")
         print(f"  IS  PF:{b['is_pf']} WR:{b['is_wr']}% DD:{b['is_dd']}% Ann:{b['is_ann']}% N:{b['is_n']}")
         print(f"  OOS PF:{b['oos_pf']} WR:{b['oos_wr']}% DD:{b['oos_dd']}% Ann:{b['oos_ann']}% N:{b['oos_n']}")
         pnl_yr = b['oos_pnl'] / 4

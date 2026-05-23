@@ -46,7 +46,7 @@ input int    SessionEnd      = 23;
 input int    MaxTradesDay    = 3;
 
 input group "=== RIESGO ==="
-input double LotRiskPct      = 0.5;
+input double LotRiskPct      = 0.4;   // bajado de 0.5 a 0.4 el 2026-05-22 (era bot menos eficiente del portfolio)
 input double MaxLots         = 4.0;
 
 input group "=== FILTRO NOTICIAS (5%ers requirement) ==="
